@@ -1,6 +1,5 @@
 board.png
 *.tar
-*.csv
+
 *.zst
-stockfish
 config.py
