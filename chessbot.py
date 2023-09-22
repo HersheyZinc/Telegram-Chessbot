@@ -1,6 +1,6 @@
-import random, datetime, logging
-from config import TOKEN, STOCKFISH_PATH, PUZZLE_PATH
+import random, datetime, logging, os
 from ChessHandler import ChessHandler
+from utils import INTRO_TEXT
 from telegram import (
     Poll,
     KeyboardButton,
@@ -20,6 +20,7 @@ from telegram.ext import (
     CallbackContext,
     CallbackQueryHandler,
 )
+
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -43,7 +44,7 @@ def remove_queued(job_queue, job_name):
 # Telegram command handlers
 def start(update: Update, context: CallbackContext) -> None:
     """Inform user about what this bot can do"""
-    from utils import INTRO_TEXT
+    
     reply_keyboard = [["/puzzle", "/votechess"]]
     reply_markup = ReplyKeyboardMarkup(
             reply_keyboard, one_time_keyboard=True, input_field_placeholder="Select command to start."
@@ -229,6 +230,9 @@ def main() -> None:
     updater.idle()
     logging.warning("Ending chessbot process.")
 
+STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2"
+PUZZLE_PATH = "./chess_puzzles.csv"
+TOKEN=os.environ['TOKEN']
 
 if __name__ == "__main__":
     chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)

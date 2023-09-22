@@ -1,5 +1,5 @@
 board.png
 *.tar
-
+*chessbot.ipynb
 *.zst
 config.py
