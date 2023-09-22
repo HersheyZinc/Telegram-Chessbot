@@ -1,6 +1,9 @@
 import random, datetime, logging, os
 from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
+STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2"
+PUZZLE_PATH = "./chess_puzzles.csv"
+TOKEN=os.environ['TOKEN']
 from telegram import (
     Poll,
     KeyboardButton,
@@ -230,9 +233,7 @@ def main() -> None:
     updater.idle()
     logging.warning("Ending chessbot process.")
 
-STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2"
-PUZZLE_PATH = "./chess_puzzles.csv"
-TOKEN=os.environ['TOKEN']
+
 
 if __name__ == "__main__":
     chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)
