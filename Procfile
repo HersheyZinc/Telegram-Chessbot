@@ -1,1 +1,1 @@
-web: python3 chessbot.py $PORT
+worker: python3 chessbot.py

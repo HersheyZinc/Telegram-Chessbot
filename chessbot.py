@@ -225,11 +225,13 @@ def main() -> None:
     dp.add_handler(CommandHandler('stop_votechess', stop_vote_chess))
 
     # Start the Bot
-    #updater.start_polling()
+    updater.start_polling()
+    '''
     updater.start_webhook(listen="0.0.0.0",
                           port=int(PORT),
                           url_path=TOKEN,
                           webhook_url="https://telegram-chessbot-963a28f57283.herokuapp.com/" + TOKEN)
+    '''
     logging.info("Chessbot initialized.")
 
     # Run the bot until the user presses Ctrl-C or the process receives SIGINT,
