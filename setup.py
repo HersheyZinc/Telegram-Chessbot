@@ -60,3 +60,7 @@ def setup():
     download_chess_puzzles()
     download_stockfish()
     logging.info("Download complete!")
+
+
+if __name__ == "__main__":
+    setup()
