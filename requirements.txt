@@ -2,6 +2,7 @@ CairoSVG==2.7.1
 chess==1.10.0
 stockfish==3.28.0
 python-telegram-bot==20.5
+python-telegram-bot[jobqueue]
 zstandard==0.21.0
 numpy==1.24.2
 pandas==1.5.3
