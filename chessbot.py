@@ -1,6 +1,7 @@
 import random, datetime, logging, os
 from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
+from setup import setup
 STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2"
 PUZZLE_PATH = "./chess_puzzles.csv"
 TOKEN=os.environ['TOKEN']
@@ -13,7 +14,6 @@ from telegram import (
 )
 from telegram.ext import (
     ApplicationBuilder,
-    Updater,
     CommandHandler,
     PollAnswerHandler,
     CallbackContext,
@@ -24,7 +24,7 @@ from telegram.ext import (
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-logging.getLogger().setLevel(logging.WARNING)
+logging.getLogger().setLevel(logging.INFO)
 
 
 # Telegram utility functions
@@ -209,10 +209,12 @@ def main() -> None:
     app.add_handler(CommandHandler('votechess', vote_chess))
     app.add_handler(CommandHandler('schedule_votechess', schedule_vote_chess))
     app.add_handler(CommandHandler('stop_votechess', stop_vote_chess))
-
-    app.run_polling()
+    
     logging.info("Chessbot initialized.")
+    app.run_polling()
+    
 
 if __name__ == "__main__":
+    setup()
     chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)
     main()
