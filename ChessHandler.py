@@ -6,13 +6,8 @@ import chess, chess.svg, random
 
 class ChessHandler:
     def __init__(self, stockfish_path, puzzle_path):
-        self.user_stockfish = Stockfish(path=stockfish_path)
-        self.user_stockfish.set_depth(10)
-        self.user_stockfish.set_elo_rating(2000)
 
-        self.cpu_stockfish = Stockfish(path=stockfish_path)
-        self.cpu_stockfish.set_depth(7)
-        self.cpu_stockfish.set_elo_rating(1300)
+        self.stockfish = Stockfish(path=stockfish_path,depth=7)
 
         self.puzzle_path = puzzle_path
         self.puzzle_db = pd.read_csv(puzzle_path)
@@ -38,8 +33,9 @@ class ChessHandler:
 
     def get_mcq_choices(self, board, solution_san=None, choices_count=4, top_moves_count=7):
         FEN = board.fen()
-        self.user_stockfish.set_fen_position(FEN)
-        top_moves = self.user_stockfish.get_top_moves(top_moves_count)
+        self.stockfish.set_fen_position(FEN)
+        self.stockfish.set_elo_rating(2000)
+        top_moves = self.stockfish.get_top_moves(top_moves_count)
         if len(top_moves) == 0:
             return ["Error", "No legal moves found", 0]
         choices = [uci_to_san(board, top_moves[i]["Move"]) for i, _ in enumerate(top_moves)]
@@ -61,11 +57,12 @@ class ChessHandler:
         return choices, solution_ind
 
 
-    def cpu_move(self, board):
+    def cpu_move(self, board, rating=1300):
 
         FEN = board.fen()
-        self.cpu_stockfish.set_fen_position(FEN)
-        cpu_move = self.cpu_stockfish.get_best_move()
+        self.stockfish.set_fen_position(FEN)
+        self.stockfish.set_elo_rating(rating)
+        cpu_move = self.stockfish.get_best_move()
         move = chess.Move.from_uci(cpu_move)
         board.push(move)
 
@@ -146,10 +143,11 @@ def uci_to_san(board:chess.Board, uci:str):
     san = board.san(move)
     return san
 
+
 def get_board_img(board: chess.Board):
     try:
         last_move = board.peek()
-    except Exception as e:
+    except:
         last_move = None
     boardsvg = chess.svg.board(board=board,flipped = not board.turn, lastmove = last_move)
     svg2png(bytestring=boardsvg,write_to='board.png')

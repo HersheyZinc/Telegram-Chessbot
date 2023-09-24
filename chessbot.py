@@ -4,41 +4,36 @@ from utils import INTRO_TEXT
 STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2"
 PUZZLE_PATH = "./chess_puzzles.csv"
 TOKEN=os.environ['TOKEN']
+#from config import TOKEN
 PORT = int(os.environ.get('PORT',88))
 from telegram import (
     Poll,
-    KeyboardButton,
-    KeyboardButtonPollType,
     ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
     Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
 )
 from telegram.ext import (
+    ApplicationBuilder,
     Updater,
     CommandHandler,
     PollAnswerHandler,
-    PollHandler,
-    MessageHandler,
     CallbackContext,
-    CallbackQueryHandler,
+    ContextTypes,
 )
 
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.WARNING)
 
 
 # Telegram utility functions
 
 def is_queued(job_queue, job_name):
     if len(job_queue.get_jobs_by_name(job_name)) == 0:
-      return False
+        return False
     else:
-      return True
+        return True
 
 def remove_queued(job_queue, job_name):
     for job in job_queue.get_jobs_by_name(job_name):
@@ -46,17 +41,17 @@ def remove_queued(job_queue, job_name):
 
 
 # Telegram command handlers
-def start(update: Update, context: CallbackContext) -> None:
+async def start(update: Update, context: CallbackContext) -> None:
     """Inform user about what this bot can do"""
     
     reply_keyboard = [["/puzzle", "/votechess"]]
     reply_markup = ReplyKeyboardMarkup(
             reply_keyboard, one_time_keyboard=True, input_field_placeholder="Select command to start."
         )
-    context.bot.send_message(chat_id=update.effective_chat.id, text=INTRO_TEXT, reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=INTRO_TEXT, reply_markup=reply_markup)
 
 
-def schedule_daily_puzzle(update: Update, context: CallbackContext) -> None:
+async def schedule_daily_puzzle(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
     job_name = "daily_puzzle_" + str(chat_id)
 
@@ -68,36 +63,36 @@ def schedule_daily_puzzle(update: Update, context: CallbackContext) -> None:
     minute = int(time_str[2:])
     time = datetime.time(hour=hour, minute=minute, second=random.randint(30,59))
 
-    context.job_queue.run_daily(send_puzzle, time=time, context=chat_id, name=job_name)
-    context.bot.send_message(chat_id=chat_id, text=f"Scheduling daily puzzle at {time_str}H (UTC) everyday.")
+    context.job_queue.run_daily(send_puzzle, time=time, chat_id=chat_id, name=job_name)
+    await context.bot.send_message(chat_id=chat_id, text=f"Scheduling daily puzzle at {time_str}H (UTC) everyday.")
 
 
-def stop_daily_puzzle(update: Update, context: CallbackContext) -> None:
+async def stop_daily_puzzle(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
     job_name = "daily_puzzle_" + str(chat_id)
 
     remove_queued(context.job_queue, job_name)
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Daily puzzle schedule has been cleared!")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Daily puzzle schedule has been cleared!")
 
 
-def puzzle(update: Update, context: CallbackContext) -> None:
-    context.job_queue.run_once(send_puzzle, 0.1, context=update.message.chat_id)
+async def puzzle(update: Update, context: CallbackContext) -> None:
+    context.job_queue.run_once(send_puzzle, 0.1, chat_id=update.message.chat_id)
 
 
-def send_puzzle(context: CallbackContext) -> None:
-    chat_id = context.job.context
+async def send_puzzle(context: CallbackContext) -> None:
+    chat_id = context.job.chat_id
     board_img, choices, solution_ind, prompt, explanation = chess_handler.generate_puzzle()
 
-    context.bot.send_photo(photo=board_img,chat_id=chat_id)
+    await context.bot.send_photo(photo=board_img,chat_id=chat_id)
 
-    context.bot.send_poll(
+    await context.bot.send_poll(
         question = prompt, options = choices, correct_option_id=solution_ind,
         type=Poll.QUIZ, allows_multiple_answers = False, explanation=explanation,
         chat_id=chat_id, is_anonymous = False
     )
 
 
-def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
+async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
     job_name = "vote_chess_" + str(chat_id)
 
@@ -109,27 +104,27 @@ def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
     minute = int(time_str[2:])
     time = datetime.time(hour=hour, minute=minute, second=random.randint(0,29))
 
-    context.job_queue.run_daily(send_vote_chess, time=time, context=update.message.chat_id, name=job_name)
-    context.bot.send_message(chat_id=update.effective_chat.id, text=f"Scheduling vote chess at {time_str}H (UTC) everyday.")
+    context.job_queue.run_daily(send_vote_chess, time=time, chat_id=chat_id, name=job_name)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Scheduling vote chess at {time_str}H (UTC) everyday.")
 
 
-def stop_vote_chess(update: Update, context: CallbackContext):
+async def stop_vote_chess(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     job_name = "vote_chess_" + str(chat_id)
     remove_queued(context.job_queue, job_name)
     vc_data = context.bot_data.get("vote_chess")
     if vc_data and vc_data.get(chat_id):
         vc_data.pop(chat_id)
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Vote chess schedule has been cleared!")
+    await context.bot.send_message(chat_id=chat_id, text="Vote chess schedule has been cleared!")
 
 
-def vote_chess(update: Update, context: CallbackContext):
+async def vote_chess(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
-    context.job_queue.run_once(send_vote_chess, 0.1, context=chat_id)
+    context.job_queue.run_once(send_vote_chess, 0.1, chat_id=chat_id)
 
 
-def send_vote_chess(context: CallbackContext) -> None:
-    chat_id = context.job.context
+async def send_vote_chess(context: CallbackContext) -> None:
+    chat_id = context.job.chat_id
     vc_data = context.bot_data.get("vote_chess")
     if not vc_data: vc_data = {}
 
@@ -156,11 +151,11 @@ def send_vote_chess(context: CallbackContext) -> None:
             top_move = chat_data.get("move_choices")[top_choice]
             board_img, choices, solution_ind, prompt, board = chess_handler.generate_votechess(board, top_move)
 
-    context.bot.send_photo(photo=board_img,chat_id=chat_id)
+    message = await context.bot.send_photo(photo=board_img,chat_id=chat_id)
     cleaned_choices = [choice.replace("#", "+") for choice in choices]
     # Case: Game has not ended
     if solution_ind >= 0:
-        message = context.bot.send_poll(
+        message = await context.bot.send_poll(
             question = prompt, options = cleaned_choices, chat_id=chat_id, is_anonymous = False
         )
 
@@ -176,13 +171,13 @@ def send_vote_chess(context: CallbackContext) -> None:
 
     # Case: Game has ended
     else:
-        context.bot.send_message(chat_id=chat_id, text=prompt)
+        message = await context.bot.send_message(chat_id=chat_id, text=prompt)
         vc_data.pop(chat_id)
 
     context.bot_data.update({"vote_chess": vc_data})
 
 
-def receive_poll_answer(update: Update, context: CallbackContext) -> None:
+async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
 
     answer = update.poll_answer
     poll_id = answer.poll_id
@@ -200,47 +195,23 @@ def receive_poll_answer(update: Update, context: CallbackContext) -> None:
                 break
 
 
-
-
-
-
-
 def main() -> None:
-    """Run bot."""
-    # Create the Updater and pass it your bot's token.
-    updater = Updater(TOKEN)
-    dp = updater.dispatcher
+    app = ApplicationBuilder().token(TOKEN).build()
 
-    # add handlers
-    dp.add_handler(CommandHandler('start', start))
+    app.add_handler(CommandHandler('start', start))
 
-    dp.add_handler(PollAnswerHandler(receive_poll_answer))
+    app.add_handler(PollAnswerHandler(receive_poll_answer))
 
-    dp.add_handler(CommandHandler('puzzle', puzzle))
-    dp.add_handler(CommandHandler('schedule_dailypuzzle', schedule_daily_puzzle))
-    dp.add_handler(CommandHandler('stop_dailypuzzle', stop_daily_puzzle))
+    app.add_handler(CommandHandler('puzzle', puzzle))
+    app.add_handler(CommandHandler('schedule_dailypuzzle', schedule_daily_puzzle))
+    app.add_handler(CommandHandler('stop_dailypuzzle', stop_daily_puzzle))
 
-    dp.add_handler(CommandHandler('votechess', vote_chess))
-    dp.add_handler(CommandHandler('schedule_votechess', schedule_vote_chess))
-    dp.add_handler(CommandHandler('stop_votechess', stop_vote_chess))
+    app.add_handler(CommandHandler('votechess', vote_chess))
+    app.add_handler(CommandHandler('schedule_votechess', schedule_vote_chess))
+    app.add_handler(CommandHandler('stop_votechess', stop_vote_chess))
 
-    # Start the Bot
-    updater.start_polling()
-    '''
-    updater.start_webhook(listen="0.0.0.0",
-                          port=int(PORT),
-                          url_path=TOKEN,
-                          webhook_url="https://telegram-chessbot-963a28f57283.herokuapp.com/" + TOKEN)
-    '''
+    app.run_polling()
     logging.info("Chessbot initialized.")
-
-    # Run the bot until the user presses Ctrl-C or the process receives SIGINT,
-    # SIGTERM or SIGABRT
-
-    updater.idle()
-    logging.warning("Ending chessbot process.")
-
-
 
 if __name__ == "__main__":
     chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)
