@@ -2,6 +2,4 @@ board.png
 *.tar
 *chessbot.ipynb
 *.zst
-
-stockfish
 config.py

@@ -215,6 +215,5 @@ def main() -> None:
     
 
 if __name__ == "__main__":
-    setup()
     chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)
     main()
