@@ -12,13 +12,15 @@ class ChessHandler:
         self.puzzle_path = puzzle_path
         df = pd.read_csv(puzzle_path)
         self.puzzle_rows = df.shape[0]
+        self.puzzle_colnames = df.columns
 
         #self.puzzle_db = pd.read_csv(puzzle_path)
 
 
     def get_puzzle(self, rating=None, sample_chunk_size=300):
         start_row = random.randint(0,self.puzzle_rows-sample_chunk_size)
-        puzzle_db = pd.read_csv(self.puzzle_path,nrows=sample_chunk_size,skiprows=start_row)
+        puzzle_db = pd.read_csv(self.puzzle_path,nrows=sample_chunk_size,
+                                skiprows=start_row,names=self.puzzle_colnames)
         if rating:
             rating_lower = max(rating - 50, puzzle_db.min()["Rating"])
             rating_upper = min(rating + 50, puzzle_db.max()["Rating"])
