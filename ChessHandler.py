@@ -10,16 +10,17 @@ class ChessHandler:
         self.stockfish = Stockfish(path=stockfish_path,depth=7)
 
         self.puzzle_path = puzzle_path
-        self.puzzle_db = pd.read_csv(puzzle_path)
+        #self.puzzle_db = pd.read_csv(puzzle_path)
 
 
     def get_puzzle(self, rating=None):
+        puzzle_db = pd.read_csv(self.puzzle_path)
         if rating:
-            rating_lower = max(rating - 50, self.puzzle_db.min()["Rating"])
-            rating_upper = min(rating + 50, self.puzzle_db.max()["Rating"])
-            row = self.puzzle_db[(self.puzzle_db.Rating>=rating_lower) & (self.puzzle_db.Rating<=rating_upper)].sample()
+            rating_lower = max(rating - 50, puzzle_db.min()["Rating"])
+            rating_upper = min(rating + 50, puzzle_db.max()["Rating"])
+            row = puzzle_db[(puzzle_db.Rating>=rating_lower) & (puzzle_db.Rating<=rating_upper)].sample()
         else:
-            row = self.puzzle_db.sample()
+            row = puzzle_db.sample()
         FEN = row["FEN"].values[0]
         moves = row["Moves"].values[0]
         rating = row["Rating"].values[0]
@@ -28,6 +29,7 @@ class ChessHandler:
         board = chess.Board(FEN)
         move = chess.Move.from_uci(first_move)
         board.push(move)
+        del puzzle_db
         return board, solution_line, rating
 
 

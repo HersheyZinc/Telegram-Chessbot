@@ -3,7 +3,7 @@ from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
 STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2"
 PUZZLE_PATH = "./chess_puzzles.csv"
-TOKEN = os.environ['TOKEN']
+TOKEN = str(os.environ['TOKEN'])
 PORT = int(os.environ.get('PORT', '8443'))
 #from config import TOKEN
 from telegram import (
@@ -215,10 +215,11 @@ def main() -> None:
     listen="0.0.0.0",
     port=PORT,
     secret_token=TOKEN,
-    webhook_url="https://telegram-chessbot.herokuapp.com/"
+    webhook_url="https://telegram-chessbot.herokuapp.com/" + TOKEN
     )
     
 
 if __name__ == "__main__":
     chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)
+    logging.warning(f"telegram bot token: {TOKEN}")
     main()
