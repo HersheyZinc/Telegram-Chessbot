@@ -217,11 +217,10 @@ def main() -> None:
     listen="0.0.0.0",
     port=PORT,
     secret_token=SECRET,
-    webhook_url="https://telegram-chessbot.herokuapp.com/"
+    webhook_url="https://telegram-chessbot.herokuapp.com/" + TOKEN
     )
     
 
 if __name__ == "__main__":
     chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)
-    logging.warning(f"telegram bot token: {TOKEN}")
     main()
