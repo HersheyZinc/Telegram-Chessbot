@@ -210,14 +210,15 @@ def main() -> None:
     app.add_handler(CommandHandler('stop_votechess', stop_vote_chess))
     
     logging.info("Chessbot initialized.")
-    #app.run_polling()
+    app.run_polling()
+    '''
     app.run_webhook(
     listen="0.0.0.0",
     port=PORT,
     secret_token=TOKEN,
     webhook_url="https://telegram-chessbot.herokuapp.com/" + TOKEN
     )
-    
+    '''
 
 if __name__ == "__main__":
     chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)
