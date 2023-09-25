@@ -1,12 +1,11 @@
 import random, datetime, logging, os
 from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
-from setup import setup
 STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2"
 PUZZLE_PATH = "./chess_puzzles.csv"
-TOKEN=os.environ['TOKEN']
+TOKEN = os.environ['TOKEN']
+PORT = int(os.environ.get('PORT', '8443'))
 #from config import TOKEN
-PORT = int(os.environ.get('PORT',88))
 from telegram import (
     Poll,
     ReplyKeyboardMarkup,
@@ -211,7 +210,13 @@ def main() -> None:
     app.add_handler(CommandHandler('stop_votechess', stop_vote_chess))
     
     logging.info("Chessbot initialized.")
-    app.run_polling()
+    #app.run_polling()
+    app.run_webhook(
+    listen="0.0.0.0",
+    port=PORT,
+    secret_token=TOKEN,
+    webhook_url="https://telegram-chessbot.herokuapp.com/"
+    )
     
 
 if __name__ == "__main__":
