@@ -30,20 +30,28 @@ logging.getLogger().setLevel(logging.INFO)
 # Telegram utility functions
 
 def is_queued(job_queue, job_name):
+    """
+    Check if jobs exists in job queue.
+    """
     if len(job_queue.get_jobs_by_name(job_name)) == 0:
         return False
     else:
         return True
 
 def remove_queued(job_queue, job_name):
+    """
+    Remove jobs from job queue.
+    """
     for job in job_queue.get_jobs_by_name(job_name):
         job.schedule_removal()
 
 
 # Telegram command handlers
 async def start(update: Update, context: CallbackContext) -> None:
-    """Inform user about what this bot can do"""
-    
+    """
+    Inform user about what this bot can do
+    """
+
     reply_keyboard = [["/puzzle", "/votechess"]]
     reply_markup = ReplyKeyboardMarkup(
             reply_keyboard, one_time_keyboard=True, input_field_placeholder="Select command to start."
@@ -52,11 +60,14 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 
 async def schedule_daily_puzzle(update: Update, context: CallbackContext) -> None:
+    """
+    Schedules a puzzle to be sent to the chat at UTC time daily.
+    """
     chat_id = update.effective_chat.id
     job_name = "daily_puzzle_" + str(chat_id)
 
     if context.args and context.args[0].isdigit():
-            time_str = context.args[0]
+        time_str = context.args[0]
     else:
         time_str = "1400" # 2pm UTC -> 10pm SGT
     hour = int(time_str[:2])
@@ -68,6 +79,9 @@ async def schedule_daily_puzzle(update: Update, context: CallbackContext) -> Non
 
 
 async def stop_daily_puzzle(update: Update, context: CallbackContext) -> None:
+    """
+    Removes all daily puzzle schedules from the chat.
+    """
     chat_id = update.effective_chat.id
     job_name = "daily_puzzle_" + str(chat_id)
 
@@ -76,10 +90,16 @@ async def stop_daily_puzzle(update: Update, context: CallbackContext) -> None:
 
 
 async def puzzle(update: Update, context: CallbackContext) -> None:
-    context.job_queue.run_once(send_puzzle, 0.1, chat_id=update.message.chat_id)
+    """
+    Schedules a puzzle to be sent immediately.
+    """
+    context.job_queue.run_once(send_puzzle, 0, chat_id=update.message.chat_id)
 
 
 async def send_puzzle(context: CallbackContext) -> None:
+    """
+    Sends a puzzle poll to the chat.
+    """
     chat_id = context.job.chat_id
     board_img, choices, solution_ind, prompt, explanation = chess_handler.generate_puzzle()
 
@@ -93,6 +113,9 @@ async def send_puzzle(context: CallbackContext) -> None:
 
 
 async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
+    """
+    Schedules a vote chess to be sent to the chat at UTC time daily.
+    """
     chat_id = update.effective_chat.id
     job_name = "vote_chess_" + str(chat_id)
 
@@ -109,6 +132,9 @@ async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
 
 
 async def stop_vote_chess(update: Update, context: CallbackContext):
+    """
+    Removes all daily votechess schedules from the chat.
+    """
     chat_id = update.effective_chat.id
     job_name = "vote_chess_" + str(chat_id)
     remove_queued(context.job_queue, job_name)
@@ -119,11 +145,17 @@ async def stop_vote_chess(update: Update, context: CallbackContext):
 
 
 async def vote_chess(update: Update, context: CallbackContext):
+    """
+    Schedules a vote chess to be sent immediately.
+    """
     chat_id = update.effective_chat.id
-    context.job_queue.run_once(send_vote_chess, 0.1, chat_id=chat_id)
+    context.job_queue.run_once(send_vote_chess, 0, chat_id=chat_id)
 
 
 async def send_vote_chess(context: CallbackContext) -> None:
+    """
+    Sends a votechess poll to the chat.
+    """
     chat_id = context.job.chat_id
     vc_data = context.bot_data.get("vote_chess")
     if not vc_data: vc_data = {}
@@ -178,7 +210,9 @@ async def send_vote_chess(context: CallbackContext) -> None:
 
 
 async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
-
+    """
+    Updates bot data whenever a user submits a poll vote.
+    """
     answer = update.poll_answer
     poll_id = answer.poll_id
     user_id = answer["user"]['id']
@@ -196,6 +230,9 @@ async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
 
 
 def main() -> None:
+    """
+    Builds telegram application and runs it.
+    """
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler('start', start))
