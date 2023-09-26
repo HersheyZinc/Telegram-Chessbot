@@ -1,12 +1,13 @@
-import random, datetime, logging, os
+import random, datetime, logging, os, pytz
 from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
-STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2"
-PUZZLE_PATH = "./chess_puzzles.csv"
-TOKEN = str(os.environ['TOKEN'])
-SECRET = str(os.environ['SECRET'])
+STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2" # Hardcoded path
+PUZZLE_PATH = "./chess_puzzles.csv" # Hardcoded path
+TOKEN = str(os.environ['TOKEN']) # Set environment variable via Heroku
+#SECRET = str(os.environ['SECRET']) # Set environment variable via Heroku
 PORT = int(os.environ.get('PORT', '8443'))
 #from config import TOKEN
+
 from telegram import (
     Poll,
     ReplyKeyboardMarkup,
@@ -69,13 +70,13 @@ async def schedule_daily_puzzle(update: Update, context: CallbackContext) -> Non
     if context.args and context.args[0].isdigit():
         time_str = context.args[0]
     else:
-        time_str = "1400" # 2pm UTC -> 10pm SGT
+        time_str = "1000"
     hour = int(time_str[:2])
     minute = int(time_str[2:])
-    time = datetime.time(hour=hour, minute=minute, second=random.randint(30,59))
+    time = datetime.time(hour=hour, minute=minute, second=random.randint(30,59), tzinfo=pytz.timezone('Asia/Singapore'))
 
     context.job_queue.run_daily(send_puzzle, time=time, chat_id=chat_id, name=job_name)
-    await context.bot.send_message(chat_id=chat_id, text=f"Scheduling daily puzzle at {time_str}H (UTC) everyday.")
+    await context.bot.send_message(chat_id=chat_id, text=f"Scheduling daily puzzle at {time_str}H (SGT) everyday.")
 
 
 async def stop_daily_puzzle(update: Update, context: CallbackContext) -> None:
@@ -110,11 +111,12 @@ async def send_puzzle(context: CallbackContext) -> None:
         type=Poll.QUIZ, allows_multiple_answers = False, explanation=explanation,
         chat_id=chat_id, is_anonymous = False
     )
+    
 
 
 async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
     """
-    Schedules a vote chess to be sent to the chat at UTC time daily.
+    Schedules a vote chess to be sent to the chat at SGT time daily.
     """
     chat_id = update.effective_chat.id
     job_name = "vote_chess_" + str(chat_id)
@@ -122,13 +124,13 @@ async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
     if context.args and context.args[0].isdigit():
         time_str = context.args[0]
     else:
-        time_str = "0200" # 2am UTC -> 10am SGT
+        time_str = "2200"
     hour = int(time_str[:2])
     minute = int(time_str[2:])
-    time = datetime.time(hour=hour, minute=minute, second=random.randint(0,29))
+    time = datetime.time(hour=hour, minute=minute, second=random.randint(0,29), tzinfo=pytz.timezone('Asia/Singapore'))
 
     context.job_queue.run_daily(send_vote_chess, time=time, chat_id=chat_id, name=job_name)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Scheduling vote chess at {time_str}H (UTC) everyday.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Scheduling vote chess at {time_str}H (SGT) everyday.")
 
 
 async def stop_vote_chess(update: Update, context: CallbackContext):

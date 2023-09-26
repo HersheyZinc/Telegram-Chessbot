@@ -8,13 +8,13 @@ Utility
 \U0001F9E9 Chess Puzzles \U0001F9E9
 Challenge puzzles from the Lichess puzzle database!
 /puzzle - Sends a puzzle
-/schedule_dailypuzzle HHMM - Schedules a puzzle to be sent everyday (UTC)
+/schedule_dailypuzzle <time> - Schedules a puzzle to be sent everyday (SGT)
 /stop_dailypuzzle - Clears all daily puzzle schedules
 
 
 \U0001F4CA Vote Chess \U0001F4CA
 Team up with your friends to win Stockfish!
 /votechess - Ends the current vote and initiates the next turn
-/schedule_votechess HHMM - Schedules a vote chess to be sent everyday (UTC)
+/schedule_votechess <time> - Schedules a vote chess to be sent everyday (SGT)
 /stop_votechess - Clears all vote chess schedules
     """

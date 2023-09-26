@@ -35,7 +35,7 @@ def download_chess_puzzles():
     df2 = df2[["FEN","Moves","Rating"]]
 
     # Write cleaned csv file
-    df2.to_csv("chess_puzzles.csv")
+    df2.to_csv("chess_puzzles.csv",index=False)
     os.remove("lichess_db_puzzle.csv")
     os.remove("lichess_db_puzzle.csv.zst")
 

@@ -10,51 +10,32 @@ class ChessHandler:
     """
     def __init__(self, stockfish_path, puzzle_path):
 
-        self.stockfish = Stockfish(path=stockfish_path,depth=7)
+        self.stockfish = Stockfish(path=stockfish_path,depth=15)
 
         self.puzzle_path = puzzle_path
-        df = pd.read_csv(puzzle_path)
-        self.puzzle_rows = df.shape[0]
-        self.puzzle_colnames = df.columns
-
-        #self.puzzle_db = pd.read_csv(puzzle_path)
+        self.puzzle_gen = self.puzzle_generator(self.puzzle_path)
 
 
-    def get_puzzle(self, rating=None, sample_chunk_size=100):
+    def puzzle_generator(self, csv_path = "chess_puzzles.csv", rating=None):
         """
-        Reads a random chess puzzle from the puzzle csv file.
-
-            Parameters:
-                rating (int): The rating of puzzle to be generated.
-                sample_chunk_size (int): The number of rows to read at a time.
-
-            Returns:
-                board (chess.Board): The board state on the player's move.
-                solution_line (list): List of moves (string) of the next moves
-                rating (int): rating of the puzzle
+        Generator that yields a random puzzle from the csv
         """
-        start_row = random.randint(0,self.puzzle_rows-sample_chunk_size)
-        puzzle_db = pd.read_csv(self.puzzle_path,nrows=sample_chunk_size,
-                                skiprows=start_row,names=self.puzzle_colnames)
-        if rating:
-            rating_lower = max(rating - 50, puzzle_db.min()["Rating"])
-            rating_upper = min(rating + 50, puzzle_db.max()["Rating"])
-            row = puzzle_db[(puzzle_db.Rating>=rating_lower) & (puzzle_db.Rating<=rating_upper)].sample()
-        else:
-            row = puzzle_db.sample()
-        FEN = row["FEN"].values[0]
-        moves = row["Moves"].values[0]
-        rating = row["Rating"].values[0]
-        solution_line = moves.split(" ")
-        first_move = solution_line.pop(0)
-        board = chess.Board(FEN)
-        move = chess.Move.from_uci(first_move)
-        board.push(move)
-        del puzzle_db
-        return board, solution_line, rating
+        for chunk in pd.read_csv(csv_path, chunksize=100):
+            chunk = chunk.sample(frac=1)
+            if rating:
+                rating_lower = max(rating - 50, chunk.min()["Rating"])
+                rating_upper = min(rating + 50, chunk.max()["Rating"])
+                chunk = chunk[(chunk.Rating>=rating_lower) & (chunk.Rating<=rating_upper)]
+
+            for _, row in chunk.iterrows():
+                FEN = row["FEN"]
+                moves = row["Moves"]
+                puzzle_rating = row["Rating"]
+
+                yield FEN, moves, puzzle_rating
 
 
-    def get_mcq_choices(self, board, solution_san=None, choices_count=4, top_moves_count=7):
+    def get_mcq_choices(self, board, solution_san=None, choices_count=4, top_moves_count=5, rating=2000, depth=21):
         """
         Generates possible moves from a chess board.
 
@@ -70,7 +51,8 @@ class ChessHandler:
         """
         FEN = board.fen()
         self.stockfish.set_fen_position(FEN)
-        self.stockfish.set_elo_rating(2000)
+        self.stockfish.set_elo_rating(rating)
+        self.stockfish.set_depth(depth)
         top_moves = self.stockfish.get_top_moves(top_moves_count)
         if len(top_moves) == 0:
             return ["Error", "No legal moves found", 0]
@@ -93,7 +75,7 @@ class ChessHandler:
         return choices, solution_ind
 
 
-    def cpu_move(self, board, rating=1300):
+    def cpu_move(self, board, rating=1300, depth=11):
         """
         Plays the best possible move using stockfish engine.
 
@@ -108,6 +90,7 @@ class ChessHandler:
         FEN = board.fen()
         self.stockfish.set_fen_position(FEN)
         self.stockfish.set_elo_rating(rating)
+        self.stockfish.set_depth(depth)
         cpu_move = self.stockfish.get_best_move()
         move = chess.Move.from_uci(cpu_move)
         board.push(move)
@@ -115,31 +98,31 @@ class ChessHandler:
         return board
 
 
-    def generate_puzzle(self, rating=None):
+    def generate_puzzle(self):
         """
         Generates a random puzzle with arguments for telegram poll format.
-
-            Parameters:
-                rating (int): rating of puzzle to be generated.
-
-            Returns:
-                board_img (image): image of current board.
-                choices (list): list of possible moves.
-                solution_ind (int): index of best move.
-                prompt (str): string prompt to be sent with telegram poll.
-                explanation (str): solution line and rating of puzzle.
         """
-        board, solution_line, rating = self.get_puzzle(rating)
+        try:
+            FEN, moves, puzzle_rating = next(self.puzzle_gen)
+        except Exception:
+            self.puzzle_gen = self.puzzle_generator()
+            FEN, moves, puzzle_rating = next(self.puzzle_gen)
+        solution_line = moves.split(" ")
+        first_move = solution_line.pop(0)
+        board = chess.Board(FEN)
+        move = chess.Move.from_uci(first_move)
+        board.push(move)
+
         board_img = get_board_img(board)
 
         solution_uci = solution_line[0]
         solution_san = uci_to_san(board, solution_uci)
 
-        choices, solution_ind = self.get_mcq_choices(board, solution_san)
+        choices, solution_ind = self.get_mcq_choices(board, solution_san, rating=2000, depth=13)
 
         turn = "White" if board.turn else "Black"
         prompt = f"\U0001F9E9 Chess Puzzle \U0001F9E9\n{turn} to move."
-        explanation = "Solution line (in UCI): " + ", ".join(solution_line) + f"\n Rating: {rating}"
+        explanation = "Solution line (in UCI): " + ", ".join(solution_line) + f"\n Rating: {puzzle_rating}"
         return board_img, choices, solution_ind, prompt, explanation
 
 
@@ -163,7 +146,7 @@ class ChessHandler:
 
         turn = "White" if board.turn else "Black"
         prompt = f"{turn} to move"
-        choices, solution_ind = self.get_mcq_choices(board, choices_count=5, top_moves_count=8)
+        choices, solution_ind = self.get_mcq_choices(board, choices_count=5, top_moves_count=8, rating=1500, depth=7)
         prompt = "\U0001F4CA Vote Chess \U0001F4CA\n" + prompt
         return board_img, choices, solution_ind, prompt, board
 
@@ -189,7 +172,7 @@ class ChessHandler:
             board.push_san(move) # move must be in san format
             outcome = board.outcome()
             if not outcome:
-                board = self.cpu_move(board)
+                board = self.cpu_move(board, rating=1300, depth=11)
 
         outcome = board.outcome()
         # Case: Game has ended
@@ -213,7 +196,8 @@ class ChessHandler:
         else:
             turn = "White" if board.turn else "Black"
             prompt = f"{turn} to move"
-            choices, solution_ind = self.get_mcq_choices(board, choices_count=random.randint(3,4), top_moves_count=5)
+            choices, solution_ind = self.get_mcq_choices(board, choices_count=random.randint(3,4), top_moves_count=5,
+                                                         rating=2200, depth=18)
 
 
         prompt = "\U0001F4CA Vote Chess \U0001F4CA\n" + prompt
