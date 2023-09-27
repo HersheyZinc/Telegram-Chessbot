@@ -1,4 +1,4 @@
-import random, datetime, logging, os, pytz
+import datetime, logging, os
 from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
 STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2" # Hardcoded path
@@ -29,16 +29,6 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 # Telegram utility functions
-
-def is_queued(job_queue, job_name):
-    """
-    Check if jobs exists in job queue.
-    """
-    if len(job_queue.get_jobs_by_name(job_name)) == 0:
-        return False
-    else:
-        return True
-
 def remove_queued(job_queue, job_name):
     """
     Remove jobs from job queue.
@@ -62,32 +52,26 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 async def schedule_daily_puzzle(update: Update, context: CallbackContext) -> None:
     """
-    Schedules a puzzle to be sent to the chat at UTC time daily.
+    Schedules a puzzle to be sent to the chat at SGT time daily.
     """
     chat_id = update.effective_chat.id
     job_name = "daily_puzzle_" + str(chat_id)
 
-    if context.args and context.args[0].isdigit():
+    time_str = "1000"
+    if context.args and context.args[0].isdigit() and len(context.args[0]) == 4:
         time_str = context.args[0]
-    else:
-        time_str = "1000"
+        
     hour = int(time_str[:2])
     minute = int(time_str[2:])
-    time = datetime.time(hour=hour, minute=minute, second=random.randint(30,59), tzinfo=pytz.timezone('Asia/Singapore'))
+    hour = (hour - 8)%24 # Convert SGT to UTC
+    time = datetime.time(hour=hour, minute=minute, second=15)
 
-    context.job_queue.run_daily(send_puzzle, time=time, chat_id=chat_id, name=job_name)
-    await context.bot.send_message(chat_id=chat_id, text=f"Scheduling daily puzzle at {time_str}H (SGT) everyday.")
-
-
-async def stop_daily_puzzle(update: Update, context: CallbackContext) -> None:
-    """
-    Removes all daily puzzle schedules from the chat.
-    """
-    chat_id = update.effective_chat.id
-    job_name = "daily_puzzle_" + str(chat_id)
-
-    remove_queued(context.job_queue, job_name)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Daily puzzle schedule has been cleared!")
+    job = context.job_queue.run_daily(send_puzzle, time=time, chat_id=chat_id, name=job_name)
+    if job:
+        reply = f"Scheduling daily puzzle at {time_str}H (SGT) everyday."
+    else:
+        reply = "Scheduling failed, please try again!"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=reply)
 
 
 async def puzzle(update: Update, context: CallbackContext) -> None:
@@ -111,7 +95,6 @@ async def send_puzzle(context: CallbackContext) -> None:
         type=Poll.QUIZ, allows_multiple_answers = False, explanation=explanation,
         chat_id=chat_id, is_anonymous = False
     )
-    
 
 
 async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
@@ -121,29 +104,32 @@ async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
     job_name = "vote_chess_" + str(chat_id)
 
-    if context.args and context.args[0].isdigit():
+    time_str = "2200"
+    if context.args and context.args[0].isdigit() and len(context.args[0]) == 4:
         time_str = context.args[0]
-    else:
-        time_str = "2200"
+
     hour = int(time_str[:2])
     minute = int(time_str[2:])
-    time = datetime.time(hour=hour, minute=minute, second=random.randint(0,29), tzinfo=pytz.timezone('Asia/Singapore'))
+    hour = (hour - 8)%24 # Convert SGT to UTC
+    time = datetime.time(hour=hour, minute=minute, second=0)
 
-    context.job_queue.run_daily(send_vote_chess, time=time, chat_id=chat_id, name=job_name)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Scheduling vote chess at {time_str}H (SGT) everyday.")
+    job = context.job_queue.run_daily(send_vote_chess, time=time, chat_id=chat_id, name=job_name)
+    if job:
+        reply = f"Scheduling vote chess at {time_str}H (SGT) everyday."
+    else:
+        reply = "Scheduling failed, please try again!"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=reply)
 
 
 async def stop_vote_chess(update: Update, context: CallbackContext):
     """
-    Removes all daily votechess schedules from the chat.
+    Ends the current game of votechess
     """
     chat_id = update.effective_chat.id
-    job_name = "vote_chess_" + str(chat_id)
-    remove_queued(context.job_queue, job_name)
     vc_data = context.bot_data.get("vote_chess")
     if vc_data and vc_data.get(chat_id):
         vc_data.pop(chat_id)
-    await context.bot.send_message(chat_id=chat_id, text="Vote chess schedule has been cleared!")
+    await context.bot.send_message(chat_id=chat_id, text="Terminated current votechess.")
 
 
 async def vote_chess(update: Update, context: CallbackContext):
@@ -211,6 +197,40 @@ async def send_vote_chess(context: CallbackContext) -> None:
     context.bot_data.update({"vote_chess": vc_data})
 
 
+async def schedule_view(update: Update, context: CallbackContext) -> None:
+    """
+    Sends list of all scheduled jobs for the chat.
+    """
+    chat_id = update.effective_chat.id
+    job_names = ["vote_chess_" + str(chat_id), "daily_puzzle_" + str(chat_id)]
+    reply_list = []
+    for job_name in job_names:
+        name = job_name.replace(str(chat_id), "").replace("_", "")
+        for job in context.job_queue.get_jobs_by_name(job_name):
+            sgt_time = job.next_t + datetime.timedelta(hours=8)
+            sgt_time = sgt_time.strftime("%d/%m/%y %H%MH")
+            reply_list.append(f"{name} - {sgt_time}")
+
+    if len(reply_list) == 0:
+        reply = "There are no scheduled tasks."
+    else:
+        reply = "Schedule (SGT):\n" + "\n".join(reply_list)
+    await context.bot.send_message(chat_id=chat_id, text=reply)
+
+
+async def schedule_clear(update: Update, context: CallbackContext) -> None:
+    """
+    Clears all scheduled tasks for the chat.
+    """
+    chat_id = update.effective_chat.id
+    job_names = ["vote_chess_" + str(chat_id), "daily_puzzle_" + str(chat_id)]
+    for job_name in job_names:
+        remove_queued(context.job_queue, job_name)
+
+    reply = "All scheduled tasks have been cleared."
+    await context.bot.send_message(chat_id=chat_id, text=reply)
+
+
 async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
     """
     Updates bot data whenever a user submits a poll vote.
@@ -238,12 +258,13 @@ def main() -> None:
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler('start', start))
+    app.add_handler(CommandHandler('schedule_view', schedule_view))
+    app.add_handler(CommandHandler('schedule_clear', schedule_clear))
 
     app.add_handler(PollAnswerHandler(receive_poll_answer))
 
     app.add_handler(CommandHandler('puzzle', puzzle))
     app.add_handler(CommandHandler('schedule_dailypuzzle', schedule_daily_puzzle))
-    app.add_handler(CommandHandler('stop_dailypuzzle', stop_daily_puzzle))
 
     app.add_handler(CommandHandler('votechess', vote_chess))
     app.add_handler(CommandHandler('schedule_votechess', schedule_vote_chess))
