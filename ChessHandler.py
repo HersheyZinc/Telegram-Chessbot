@@ -146,7 +146,7 @@ class ChessHandler:
 
         turn = "White" if board.turn else "Black"
         prompt = f"{turn} to move"
-        choices, solution_ind = self.get_mcq_choices(board, choices_count=5, top_moves_count=8, rating=1500, depth=7)
+        choices, solution_ind = self.get_mcq_choices(board, choices_count=3, top_moves_count=7, rating=1500, depth=7)
         prompt = "\U0001F4CA Vote Chess \U0001F4CA\n" + prompt
         return board_img, choices, solution_ind, prompt, board
 

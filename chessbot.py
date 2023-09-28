@@ -26,14 +26,15 @@ from telegram.ext import (
     PicklePersistence,
 )
 
-
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logging.getLogger().setLevel(logging.INFO)
 
 
-# Telegram utility functions
+# --------------------------- Helper Functions --------------------------- #
+
+
 class Task(Enum):
     CHESS_PUZZLE = "chess puzzle"
     CHESS_VOTE = "vote chess"
@@ -47,8 +48,6 @@ def remove_queued(job_queue, job_name):
         job.schedule_removal()
 
 
-# Telegram command handlers
-
 # --------------------------- Chess Puzzle --------------------------- #
 
 
@@ -59,12 +58,11 @@ async def send_chess_puzzle(context: CallbackContext) -> None:
     chat_id = context.job.chat_id
     board_img, choices, solution_ind, prompt, explanation = chess_handler.generate_puzzle()
 
-    await context.bot.send_photo(photo=board_img,chat_id=chat_id)
-
-    await context.bot.send_poll(
+    msg = await context.bot.send_photo(photo=board_img,chat_id=chat_id)
+    msg = await context.bot.send_poll(
         question = prompt, options = choices, correct_option_id=solution_ind,
         type=Poll.QUIZ, allows_multiple_answers = False, explanation=explanation,
-        chat_id=chat_id, is_anonymous = False
+        chat_id=chat_id, is_anonymous = False, disable_notification=True
     )
 
 
@@ -72,7 +70,10 @@ async def chess_puzzle(update: Update, context: CallbackContext) -> None:
     """
     Schedules a puzzle to be sent immediately.
     """
+    chat_id = update.effective_chat.id
+    msg_id = update.effective_message.message_id
     context.job_queue.run_once(send_chess_puzzle, 0, chat_id=update.message.chat_id)
+    context.job_queue.run_once(delete_msg, datetime.timedelta(minutes=30), chat_id=chat_id, data=msg_id)
 
 
 async def schedule_chess_puzzle(update: Update, context: CallbackContext) -> None:
@@ -96,7 +97,7 @@ async def schedule_chess_puzzle(update: Update, context: CallbackContext) -> Non
         time = datetime.time(hour=hour, minute=minute, second=random.randint(0,15))
 
         job = context.job_queue.run_daily(send_chess_vote, time=time, 
-                                          chat_id=chat_id, name=job_name, data=time_str)
+                                          chat_id=chat_id, name=job_name,)
         if job:
             reply = f"Scheduling {task.value} at {time_str}H (SGT) everyday."
             schedules.append(schedule)
@@ -145,9 +146,9 @@ async def send_chess_vote(context: CallbackContext) -> None:
     cleaned_choices = [choice.replace("#", "+") for choice in choices]
     # Case: Game has not ended
     if solution_ind >= 0:
-        message = await context.bot.send_poll(
-            question = prompt, options = cleaned_choices, chat_id=chat_id, is_anonymous = False
-        )
+        message = await context.bot.send_poll(question = prompt, options = cleaned_choices,
+                                              chat_id=chat_id, is_anonymous = False,
+                                              disable_notification=True)
 
         data = {
             chat_id: {
@@ -183,7 +184,9 @@ async def chess_vote(update: Update, context: CallbackContext):
     Schedules a vote chess to be sent immediately.
     """
     chat_id = update.effective_chat.id
+    msg_id = update.effective_message.message_id
     context.job_queue.run_once(send_chess_vote, 0, chat_id=chat_id)
+    context.job_queue.run_once(delete_msg, datetime.timedelta(minutes=30), chat_id=chat_id, data=msg_id)
 
 
 async def schedule_chess_vote(update: Update, context: CallbackContext) -> None:
@@ -207,7 +210,7 @@ async def schedule_chess_vote(update: Update, context: CallbackContext) -> None:
         time = datetime.time(hour=hour, minute=minute, second=random.randint(0,15))
 
         job = context.job_queue.run_daily(send_chess_vote, time=time,
-                                          chat_id=chat_id, name=job_name, data=time_str)
+                                          chat_id=chat_id, name=job_name,)
         if job:
             reply = f"Scheduling {task.value} at {time_str}H (SGT) everyday."
             schedules.append(schedule)
@@ -231,7 +234,9 @@ async def start(update: Update, context: CallbackContext) -> None:
     reply_markup = ReplyKeyboardMarkup(
             reply_keyboard, one_time_keyboard=True, input_field_placeholder="Select command to start."
         )
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=INTRO_TEXT, reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=update.effective_chat.id, 
+                                   text=INTRO_TEXT, reply_markup=reply_markup,
+                                   disable_notification=True)
 
 
 async def schedule_view(update: Update, context: CallbackContext) -> None:
@@ -253,7 +258,7 @@ async def schedule_view(update: Update, context: CallbackContext) -> None:
         reply = "There are no scheduled tasks."
     else:
         reply = "Schedule (SGT):\n" + "\n".join(reply_list)
-    await context.bot.send_message(chat_id=chat_id, text=reply)
+    await context.bot.send_message(chat_id=chat_id, text=reply, disable_notification=True)
 
 
 async def schedule_clear(update: Update, context: CallbackContext) -> None:
@@ -270,10 +275,19 @@ async def schedule_clear(update: Update, context: CallbackContext) -> None:
     context.bot_data.update({"schedules":cleared_schedules})
 
     reply = "All scheduled tasks have been cleared."
-    await context.bot.send_message(chat_id=chat_id, text=reply)
+    await context.bot.send_message(chat_id=chat_id, text=reply, disable_notification=True)
 
 
 # --------------------------- Background Functions --------------------------- #
+
+
+async def delete_msg(context: CallbackContext) -> None:
+    """
+    Deletes a message from chat
+    """
+    chat_id = context.job.chat_id
+    msg_id = context.job.data
+    await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
 
 
 async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
@@ -320,7 +334,24 @@ async def init_app(app: Application) -> None:
         else:
             func = send_chess_puzzle
         app.job_queue.run_daily(func, time=time, chat_id=chat_id,
-                                name=job_name, data=time_str)
+                                name=job_name)
+
+
+async def stop_app(app: Application) -> None:
+    """
+    Inform users that telegram bot is shutting down
+    """
+    bot_data = app.bot_data
+    chat_ids = []
+    for schedule in bot_data.get("schedules"):
+        chat_id, _, _ = schedule
+        if chat_id not in chat_ids:
+            chat_ids.append(chat_id)
+            await app.bot.send_message(chat_id=chat_id, 
+                                       text="Warning:\nChess bot is shutting down...")
+
+
+# --------------------------- Main --------------------------- #
 
 
 def main() -> None:
@@ -328,12 +359,11 @@ def main() -> None:
     Builds telegram application and runs it.
     """
     persistence = PicklePersistence(filepath="bot_data")
-    app = ApplicationBuilder().token(TOKEN).persistence(persistence).post_init(init_app).build()
+    app = ApplicationBuilder().token(TOKEN).persistence(persistence).post_init(init_app).post_stop(stop_app).build()
 
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('schedule_view', schedule_view))
     app.add_handler(CommandHandler('schedule_clear', schedule_clear))
-
     app.add_handler(PollAnswerHandler(receive_poll_answer))
 
     app.add_handler(CommandHandler('puzzle', chess_puzzle))
