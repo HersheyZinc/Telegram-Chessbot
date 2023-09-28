@@ -1,4 +1,4 @@
-import datetime, logging, os
+import datetime, logging, os, random
 from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
 import setup
@@ -66,7 +66,7 @@ async def schedule_daily_puzzle(update: Update, context: CallbackContext) -> Non
     hour = int(time_str[:2])
     minute = int(time_str[2:])
     hour = (hour - 8)%24 # Convert SGT to UTC
-    time = datetime.time(hour=hour, minute=minute, second=15)
+    time = datetime.time(hour=hour, minute=minute, second=random.randint(0,15))
 
     job = context.job_queue.run_daily(send_puzzle, time=time, chat_id=chat_id, name=job_name)
     if job:
@@ -113,7 +113,7 @@ async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
     hour = int(time_str[:2])
     minute = int(time_str[2:])
     hour = (hour - 8)%24 # Convert SGT to UTC
-    time = datetime.time(hour=hour, minute=minute, second=0)
+    time = datetime.time(hour=hour, minute=minute, second=random.randint(16,30))
 
     job = context.job_queue.run_daily(send_vote_chess, time=time, chat_id=chat_id, name=job_name)
     if job:
