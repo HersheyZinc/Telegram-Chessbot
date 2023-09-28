@@ -1,13 +1,15 @@
 import datetime, logging, os, random
+from enum import Enum
 from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
 import setup
-STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2" # Hardcoded path
-PUZZLE_PATH = "./chess_puzzles.csv" # Hardcoded path
+
+
 TOKEN = str(os.environ['TOKEN']) # Set environment variable via Heroku
 SECRET = str(os.environ['SECRET']) # Set environment variable via Heroku
 APPNAME = str(os.environ['APPNAME']) # Set environment var via Heroku
 PORT = int(os.environ.get('PORT', '8443'))
+
 #from config import TOKEN
 
 from telegram import (
@@ -17,10 +19,11 @@ from telegram import (
 )
 from telegram.ext import (
     ApplicationBuilder,
+    Application,
     CommandHandler,
     PollAnswerHandler,
     CallbackContext,
-    ContextTypes,
+    PicklePersistence,
 )
 
 
@@ -31,6 +34,11 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 # Telegram utility functions
+class Task(Enum):
+    CHESS_PUZZLE = "chess puzzle"
+    CHESS_VOTE = "vote chess"
+
+
 def remove_queued(job_queue, job_name):
     """
     Remove jobs from job queue.
@@ -40,50 +48,11 @@ def remove_queued(job_queue, job_name):
 
 
 # Telegram command handlers
-async def start(update: Update, context: CallbackContext) -> None:
-    """
-    Inform user about what this bot can do
-    """
 
-    reply_keyboard = [["/puzzle", "/votechess"]]
-    reply_markup = ReplyKeyboardMarkup(
-            reply_keyboard, one_time_keyboard=True, input_field_placeholder="Select command to start."
-        )
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=INTRO_TEXT, reply_markup=reply_markup)
+# --------------------------- Chess Puzzle --------------------------- #
 
 
-async def schedule_daily_puzzle(update: Update, context: CallbackContext) -> None:
-    """
-    Schedules a puzzle to be sent to the chat at SGT time daily.
-    """
-    chat_id = update.effective_chat.id
-    job_name = "daily_puzzle_" + str(chat_id)
-
-    time_str = "1000"
-    if context.args and context.args[0].isdigit() and len(context.args[0]) == 4:
-        time_str = context.args[0]
-        
-    hour = int(time_str[:2])
-    minute = int(time_str[2:])
-    hour = (hour - 8)%24 # Convert SGT to UTC
-    time = datetime.time(hour=hour, minute=minute, second=random.randint(0,15))
-
-    job = context.job_queue.run_daily(send_puzzle, time=time, chat_id=chat_id, name=job_name)
-    if job:
-        reply = f"Scheduling daily puzzle at {time_str}H (SGT) everyday."
-    else:
-        reply = "Scheduling failed, please try again!"
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=reply)
-
-
-async def puzzle(update: Update, context: CallbackContext) -> None:
-    """
-    Schedules a puzzle to be sent immediately.
-    """
-    context.job_queue.run_once(send_puzzle, 0, chat_id=update.message.chat_id)
-
-
-async def send_puzzle(context: CallbackContext) -> None:
+async def send_chess_puzzle(context: CallbackContext) -> None:
     """
     Sends a puzzle poll to the chat.
     """
@@ -99,56 +68,55 @@ async def send_puzzle(context: CallbackContext) -> None:
     )
 
 
-async def schedule_vote_chess(update: Update, context: CallbackContext) -> None:
+async def chess_puzzle(update: Update, context: CallbackContext) -> None:
     """
-    Schedules a vote chess to be sent to the chat at SGT time daily.
+    Schedules a puzzle to be sent immediately.
     """
-    chat_id = update.effective_chat.id
-    job_name = "vote_chess_" + str(chat_id)
+    context.job_queue.run_once(send_chess_puzzle, 0, chat_id=update.message.chat_id)
 
+
+async def schedule_chess_puzzle(update: Update, context: CallbackContext) -> None:
+    """
+    Schedules a puzzle to be sent to the chat at SGT time daily.
+    """
+    task = Task.CHESS_PUZZLE
+    chat_id = update.effective_chat.id
+    job_name = task.value + str(chat_id)
+
+    # Check if user specified timing
     time_str = "2200"
     if context.args and context.args[0].isdigit() and len(context.args[0]) == 4:
         time_str = context.args[0]
+    
+    schedules = context.bot_data.get("schedules")
+    schedule = (chat_id, task.value, time_str)
+    if schedule not in schedules:
+        hour = (int(time_str[:2]) - 8)%24 # Convert SGT to UTC
+        minute = min(int(time_str[2:]),59)
+        time = datetime.time(hour=hour, minute=minute, second=random.randint(0,15))
 
-    hour = int(time_str[:2])
-    minute = int(time_str[2:])
-    hour = (hour - 8)%24 # Convert SGT to UTC
-    time = datetime.time(hour=hour, minute=minute, second=random.randint(16,30))
-
-    job = context.job_queue.run_daily(send_vote_chess, time=time, chat_id=chat_id, name=job_name)
-    if job:
-        reply = f"Scheduling vote chess at {time_str}H (SGT) everyday."
+        job = context.job_queue.run_daily(send_chess_vote, time=time, 
+                                          chat_id=chat_id, name=job_name, data=time_str)
+        if job:
+            reply = f"Scheduling {task.value} at {time_str}H (SGT) everyday."
+            schedules.append(schedule)
+        else:
+            reply = "Scheduling failed, please try again!"
     else:
-        reply = "Scheduling failed, please try again!"
+        reply = f"Schedule for {task.value} already exists for {time_str}H, please try another timing!"
+
     await context.bot.send_message(chat_id=update.effective_chat.id, text=reply)
 
 
-async def stop_vote_chess(update: Update, context: CallbackContext):
-    """
-    Ends the current game of votechess
-    """
-    chat_id = update.effective_chat.id
-    vc_data = context.bot_data.get("vote_chess")
-    if vc_data and vc_data.get(chat_id):
-        vc_data.pop(chat_id)
-    await context.bot.send_message(chat_id=chat_id, text="Terminated current votechess.")
+# --------------------------- Vote Chess --------------------------- #
 
 
-async def vote_chess(update: Update, context: CallbackContext):
-    """
-    Schedules a vote chess to be sent immediately.
-    """
-    chat_id = update.effective_chat.id
-    context.job_queue.run_once(send_vote_chess, 0, chat_id=chat_id)
-
-
-async def send_vote_chess(context: CallbackContext) -> None:
+async def send_chess_vote(context: CallbackContext) -> None:
     """
     Sends a votechess poll to the chat.
     """
     chat_id = context.job.chat_id
     vc_data = context.bot_data.get("vote_chess")
-    if not vc_data: vc_data = {}
 
     chat_data = vc_data.get(chat_id)
     # Case: Game has not been initialized
@@ -199,12 +167,80 @@ async def send_vote_chess(context: CallbackContext) -> None:
     context.bot_data.update({"vote_chess": vc_data})
 
 
+async def stop_chess_vote(update: Update, context: CallbackContext):
+    """
+    Ends the current game of votechess
+    """
+    chat_id = update.effective_chat.id
+    vc_data = context.bot_data.get("vote_chess")
+    if vc_data and vc_data.get(chat_id):
+        vc_data.pop(chat_id)
+    await context.bot.send_message(chat_id=chat_id, text="Terminated current votechess.")
+
+
+async def chess_vote(update: Update, context: CallbackContext):
+    """
+    Schedules a vote chess to be sent immediately.
+    """
+    chat_id = update.effective_chat.id
+    context.job_queue.run_once(send_chess_vote, 0, chat_id=chat_id)
+
+
+async def schedule_chess_vote(update: Update, context: CallbackContext) -> None:
+    """
+    Schedules a vote chess to be sent to the chat at SGT time daily.
+    """
+    task = Task.CHESS_VOTE
+    chat_id = update.effective_chat.id
+    job_name = task.value + str(chat_id)
+
+    # Check if user specified timing
+    time_str = "1000"
+    if context.args and context.args[0].isdigit() and len(context.args[0]) == 4:
+        time_str = context.args[0]
+    
+    schedules = context.bot_data.get("schedules")
+    schedule = (chat_id, task.value, time_str)
+    if schedule not in schedules:
+        hour = (int(time_str[:2]) - 8)%24 # Convert SGT to UTC
+        minute = int(time_str[2:])
+        time = datetime.time(hour=hour, minute=minute, second=random.randint(0,15))
+
+        job = context.job_queue.run_daily(send_chess_vote, time=time,
+                                          chat_id=chat_id, name=job_name, data=time_str)
+        if job:
+            reply = f"Scheduling {task.value} at {time_str}H (SGT) everyday."
+            schedules.append(schedule)
+        else:
+            reply = "Scheduling failed, please try again!"
+    else:
+        reply = f"Schedule for {task.value} already exists for {time_str}H, please try another timing!"
+
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=reply)
+
+
+# --------------------------- Utility Functions --------------------------- #
+
+
+async def start(update: Update, context: CallbackContext) -> None:
+    """
+    Inform user about what this bot can do
+    """
+
+    reply_keyboard = [["/puzzle", "/votechess"]]
+    reply_markup = ReplyKeyboardMarkup(
+            reply_keyboard, one_time_keyboard=True, input_field_placeholder="Select command to start."
+        )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=INTRO_TEXT, reply_markup=reply_markup)
+
+
 async def schedule_view(update: Update, context: CallbackContext) -> None:
     """
     Sends list of all scheduled jobs for the chat.
     """
     chat_id = update.effective_chat.id
-    job_names = ["vote_chess_" + str(chat_id), "daily_puzzle_" + str(chat_id)]
+    
+    job_names = [task.value+str(chat_id) for task in Task]
     reply_list = []
     for job_name in job_names:
         name = job_name.replace(str(chat_id), "").replace("_", "")
@@ -225,12 +261,19 @@ async def schedule_clear(update: Update, context: CallbackContext) -> None:
     Clears all scheduled tasks for the chat.
     """
     chat_id = update.effective_chat.id
-    job_names = ["vote_chess_" + str(chat_id), "daily_puzzle_" + str(chat_id)]
+    job_names = [task.value+str(chat_id) for task in Task]
     for job_name in job_names:
         remove_queued(context.job_queue, job_name)
+    
+    schedules = context.bot_data.get("schedules")
+    cleared_schedules = [sched for sched in schedules if sched[0]==chat_id]
+    context.bot_data.update({"schedules":cleared_schedules})
 
     reply = "All scheduled tasks have been cleared."
     await context.bot.send_message(chat_id=chat_id, text=reply)
+
+
+# --------------------------- Background Functions --------------------------- #
 
 
 async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
@@ -253,11 +296,39 @@ async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
                 break
 
 
+async def init_app(app: Application) -> None:
+    """
+    Initialize persistent data, reschedule tasks if needed
+    """
+    bot_data = app.bot_data
+    if not bot_data:
+        bot_data = {"vote_chess": {}, "schedules": []}
+        app.bot_data.update(bot_data)
+        return
+
+    for schedule in bot_data.get("schedules"):
+        chat_id, task, time_str = schedule
+        job_name = task + str(chat_id)
+
+        hour = (int(time_str[:2]) - 8)%24 # Convert SGT to UTC
+        minute = min(int(time_str[2:]),59)
+        time = datetime.time(hour=hour, minute=minute, second=random.randint(0,30))
+        if task == Task.CHESS_PUZZLE.value:
+            func = send_chess_puzzle
+        elif task == Task.CHESS_VOTE.value:
+            func = send_chess_vote
+        else:
+            func = send_chess_puzzle
+        app.job_queue.run_daily(func, time=time, chat_id=chat_id,
+                                name=job_name, data=time_str)
+
+
 def main() -> None:
     """
     Builds telegram application and runs it.
     """
-    app = ApplicationBuilder().token(TOKEN).build()
+    persistence = PicklePersistence(filepath="bot_data")
+    app = ApplicationBuilder().token(TOKEN).persistence(persistence).post_init(init_app).build()
 
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('schedule_view', schedule_view))
@@ -265,16 +336,17 @@ def main() -> None:
 
     app.add_handler(PollAnswerHandler(receive_poll_answer))
 
-    app.add_handler(CommandHandler('puzzle', puzzle))
-    app.add_handler(CommandHandler('schedule_dailypuzzle', schedule_daily_puzzle))
+    app.add_handler(CommandHandler('puzzle', chess_puzzle))
+    app.add_handler(CommandHandler('schedule_dailypuzzle', schedule_chess_puzzle))
 
-    app.add_handler(CommandHandler('votechess', vote_chess))
-    app.add_handler(CommandHandler('schedule_votechess', schedule_vote_chess))
-    app.add_handler(CommandHandler('stop_votechess', stop_vote_chess))
+    app.add_handler(CommandHandler('votechess', chess_vote))
+    app.add_handler(CommandHandler('schedule_votechess', schedule_chess_vote))
+    app.add_handler(CommandHandler('stop_votechess', stop_chess_vote))
     
     logging.info("Chessbot initialized.")
     
     #app.run_polling()
+    
     app.run_webhook(
     listen="0.0.0.0",
     port=PORT,
@@ -284,7 +356,6 @@ def main() -> None:
     
 
 if __name__ == "__main__":
-    setup.download_stockfish()
-    chess_handler = ChessHandler(STOCKFISH_PATH, PUZZLE_PATH)
-
+    setup.setup()
+    chess_handler = ChessHandler(setup.STOCKFISH_PATH, setup.PUZZLE_PATH)
     main()

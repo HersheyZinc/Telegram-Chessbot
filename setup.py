@@ -1,15 +1,26 @@
 import pandas as pd
 import os, requests, zstandard, logging
 
+PUZZLEURL = "https://database.lichess.org/lichess_db_puzzle.csv.zst"
+PUZZLE_PATH = "./chess_puzzles.csv" # Hardcoded path
+
+STOCKFISHURL = "https://github.com/official-stockfish/Stockfish/releases/download/sf_16/stockfish-ubuntu-x86-64-avx2.tar"
+STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2" # Hardcoded path
+
+
 def download_chess_puzzles():
+    """
+    Downloads Lichess puzzle database and uncompresses it.
+    Performs simple cleaning to reduce file size.
+    """
     logging.info("Downloading Lichess puzzle database")
-    if os.path.isfile("lichess_db_puzzle.csv"):
+    if os.path.isfile("chess_puzzles.csv"):
         logging.info("Lichess CSV file already exists! Skipping...")
         return
     
     # Download lichess puzzle database
-    PUZZLEURL = "https://database.lichess.org/lichess_db_puzzle.csv.zst"
-    response = requests.get(PUZZLEURL)
+    
+    response = requests.get(PUZZLEURL, timeout=10)
 
     # Download zst file
     with open("lichess_db_puzzle.csv.zst", "wb") as f:
@@ -41,10 +52,16 @@ def download_chess_puzzles():
 
 
 def download_stockfish():
+    """
+    Downloads stockfish engine
+    """
     logging.info("Downloading Stockfish 16")
+    if os.path.isdir("stockfish"):
+        logging.info("Stockfish already exists! Skipping...")
+        return
+    
     # Download stockfish from github
-    STOCKFISHURL = "https://github.com/official-stockfish/Stockfish/releases/download/sf_16/stockfish-ubuntu-x86-64-avx2.tar"
-    response = requests.get(STOCKFISHURL)
+    response = requests.get(STOCKFISHURL, timeout=10)
 
     # Download tar file
     with open("stockfish.tar", "wb") as f:
@@ -56,6 +73,9 @@ def download_stockfish():
 
 
 def setup():
+    """
+    Downloads and formats necessary files needed for chessbot to function
+    """
     logging.info("Downloading database and chess engines...")
     download_chess_puzzles()
     download_stockfish()

@@ -1,7 +1,5 @@
 board.png
-*.tar
-*chessbot.ipynb
-*.zst
 config.py
 test.py
 stockfish
+bot_data
