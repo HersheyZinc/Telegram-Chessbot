@@ -4,3 +4,4 @@ board.png
 *.zst
 config.py
 test.py
+stockfish
