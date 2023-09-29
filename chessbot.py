@@ -1,18 +1,21 @@
-import datetime, logging, os, random, urlparse, redis
+import datetime, logging, os, random, redis, json
 from enum import Enum
 from ChessHandler import ChessHandler
 from utils import INTRO_TEXT
 import setup
+from urllib.parse import urlparse
 
 
 TOKEN = str(os.environ['TOKEN']) # Set environment variable via Heroku
 SECRET = str(os.environ['SECRET']) # Set environment variable via Heroku
 APPNAME = str(os.environ['APPNAME']) # Set environment var via Heroku
 PORT = int(os.environ.get('PORT', '8443'))
-REDIS = urlparse.urlparse(os.environ.get('REDISCLOUD_URL'))
+REDIS_URL = os.environ.get('REDISCLOUD_URL')
 
-#from config import TOKEN
 
+#from config import TOKEN, REDIS_URL
+
+REDIS = urlparse(REDIS_URL)
 from telegram import (
     Poll,
     ReplyKeyboardMarkup,
@@ -317,8 +320,11 @@ async def init_app(app: Application) -> None:
     Initialize persistent data, reschedule tasks if needed
     """
     r = redis.Redis(host=REDIS.hostname, port=REDIS.port, password=REDIS.password)
-    bot_data = r.get("bot_data")
-    if not bot_data:
+    try:
+        bot_data_bytes = r.get("bot_data")
+        bot_data = json.loads(bot_data_bytes.decode('utf-8'))
+    except Exception:
+        logging.warning("No previous data discovered. Initializing empty bot data.")
         bot_data = {"vote_chess": {}, "schedules": []}
         app.bot_data.update(bot_data)
         return
@@ -328,10 +334,12 @@ async def init_app(app: Application) -> None:
     for schedule in bot_data.get("schedules"):
         chat_id, task, time_str = schedule
         job_name = task + str(chat_id)
+        
         if chat_id not in chat_ids:
             chat_ids.append(chat_id)
-            await app.bot.send_message(chat_id=chat_id, 
+            msg = await app.bot.send_message(chat_id=chat_id, disable_notification=True,
                                        text="INFO:\nChess bot has been initiazed.")
+            app.job_queue.run_once(delete_msg, 60, chat_id=chat_id, data=msg.message_id)
 
         hour = (int(time_str[:2]) - 8)%24 # Convert SGT to UTC
         minute = min(int(time_str[2:]),59)
@@ -352,14 +360,17 @@ async def stop_app(app: Application) -> None:
     """
     bot_data = app.bot_data
     r = redis.Redis(host=REDIS.hostname, port=REDIS.port, password=REDIS.password)
-    bot_data = r.set("bot_data", bot_data)
+    bot_data_bytes = json.dumps(bot_data).encode('utf-8')
+    r.set("bot_data", bot_data_bytes)
     chat_ids = []
     for schedule in bot_data.get("schedules"):
         chat_id, _, _ = schedule
         if chat_id not in chat_ids:
             chat_ids.append(chat_id)
-            await app.bot.send_message(chat_id=chat_id, 
+            msg = await app.bot.send_message(chat_id=chat_id, disable_notification=True,
                                        text="INFO:\nChess bot is restarting...")
+            app.job_queue.run_once(delete_msg, 60, chat_id=chat_id, data=msg.message_id)
+            
 
 
 # --------------------------- Main --------------------------- #
@@ -369,7 +380,6 @@ def main() -> None:
     """
     Builds telegram application and runs it.
     """
-    #persistence = PicklePersistence(filepath="bot_data")
     app = ApplicationBuilder().token(TOKEN).post_init(init_app).post_stop(stop_app).build()
 
     app.add_handler(CommandHandler('start', start))
@@ -383,8 +393,6 @@ def main() -> None:
     app.add_handler(CommandHandler('votechess', chess_vote))
     app.add_handler(CommandHandler('schedule_votechess', schedule_chess_vote))
     app.add_handler(CommandHandler('stop_votechess', stop_chess_vote))
-    
-    logging.info("Chessbot initialized.")
     
     #app.run_polling()
     
