@@ -332,12 +332,6 @@ async def init_app(app: Application) -> None:
     for schedule in bot_data.get("schedules"):
         chat_id, task, time_str = schedule
         job_name = task + str(chat_id)
-        
-        if chat_id not in chat_ids:
-            chat_ids.append(chat_id)
-            msg = await app.bot.send_message(chat_id=chat_id, disable_notification=True,
-                                       text="INFO:\nChess bot has been initialized.")
-            app.job_queue.run_once(delete_msg, 60, chat_id=chat_id, data=msg.message_id)
 
         hour = (int(time_str[:2]) - 8)%24 # Convert SGT to UTC
         minute = min(int(time_str[2:]),59)
@@ -351,6 +345,13 @@ async def init_app(app: Application) -> None:
         app.job_queue.run_daily(func, time=time, chat_id=chat_id,
                                 name=job_name)
 
+        continue
+        if chat_id not in chat_ids:
+                chat_ids.append(chat_id)
+                msg = await app.bot.send_message(chat_id=chat_id, disable_notification=True,
+                                        text="INFO:\nChess bot has been initialized.")
+                app.job_queue.run_once(delete_msg, 60, chat_id=chat_id, data=msg.message_id)
+
 
 async def stop_app(app: Application) -> None:
     """
@@ -360,6 +361,7 @@ async def stop_app(app: Application) -> None:
     r = redis.Redis(host=REDIS.hostname, port=REDIS.port, password=REDIS.password)
     bot_data_bytes = json.dumps(bot_data).encode('utf-8')
     r.set(TOKEN, bot_data_bytes)
+    return
     chat_ids = []
     for schedule in bot_data.get("schedules"):
         chat_id, _, _ = schedule
