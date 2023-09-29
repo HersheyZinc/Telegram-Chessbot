@@ -12,7 +12,6 @@ APPNAME = str(os.environ['APPNAME']) # Set environment var via Heroku
 PORT = int(os.environ.get('PORT', '8443'))
 REDIS_URL = os.environ.get('REDISCLOUD_URL')
 
-
 #from config import TOKEN, REDIS_URL
 
 REDIS = urlparse(REDIS_URL)
@@ -27,7 +26,6 @@ from telegram.ext import (
     CommandHandler,
     PollAnswerHandler,
     CallbackContext,
-    PicklePersistence,
 )
 
 logging.basicConfig(
@@ -111,7 +109,7 @@ async def schedule_chess_puzzle(update: Update, context: CallbackContext) -> Non
     else:
         reply = f"Schedule for {task.value} already exists for {time_str}H, please try another timing!"
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=reply)
+    await context.bot.send_message(chat_id=chat_id, text=reply)
 
 
 # --------------------------- Vote Chess --------------------------- #
@@ -124,14 +122,14 @@ async def send_chess_vote(context: CallbackContext) -> None:
     chat_id = context.job.chat_id
     vc_data = context.bot_data.get("vote_chess")
 
-    chat_data = vc_data.get(chat_id)
+    chat_data = vc_data.get(str(chat_id))
     # Case: Game has not been initialized
     if not chat_data:
-        board_img, choices, solution_ind, prompt, board = chess_handler.new_votechess()
+        board_img, choices, solution_ind, prompt, fen = chess_handler.new_votechess()
 
     # Case: Game has been initialized
     else:
-        board = chat_data.get("board")
+        fen = chat_data.get("board")
         # Get the most voted move
         moves = chat_data.get("player_moves")
         choices = []
@@ -140,12 +138,12 @@ async def send_chess_vote(context: CallbackContext) -> None:
 
         # Case: Nobody voted -> generate poll from the same position
         if len(choices) == 0:
-            board_img, choices, solution_ind, prompt, board = chess_handler.generate_votechess(board, None)
+            board_img, choices, solution_ind, prompt, fen = chess_handler.generate_votechess(fen, None)
         # Case: Top move exists
         else:
             top_choice = max(set(choices), key = choices.count) # If tie, selects first index
             top_move = chat_data.get("move_choices")[top_choice]
-            board_img, choices, solution_ind, prompt, board = chess_handler.generate_votechess(board, top_move)
+            board_img, choices, solution_ind, prompt, fen = chess_handler.generate_votechess(fen, top_move)
 
     message = await context.bot.send_photo(photo=board_img,chat_id=chat_id)
     cleaned_choices = [choice.replace("#", "+") for choice in choices]
@@ -156,8 +154,8 @@ async def send_chess_vote(context: CallbackContext) -> None:
                                               disable_notification=True)
 
         data = {
-            chat_id: {
-                "board": board,
+            str(chat_id): {
+                "board": fen,
                 "current_poll_id": message.poll.id,
                 "move_choices": choices,
                 "player_moves": {}
@@ -179,8 +177,8 @@ async def stop_chess_vote(update: Update, context: CallbackContext):
     """
     chat_id = update.effective_chat.id
     vc_data = context.bot_data.get("vote_chess")
-    if vc_data and vc_data.get(chat_id):
-        vc_data.pop(chat_id)
+    if vc_data and vc_data.get(str(chat_id)):
+        vc_data.pop(str(chat_id))
     await context.bot.send_message(chat_id=chat_id, text="Terminated current votechess.")
 
 
@@ -307,7 +305,7 @@ async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
     vc_data = context.bot_data.get("vote_chess")
     if vc_data:
         for chat_id in vc_data.keys():
-            chat_data = vc_data.get(chat_id)
+            chat_data = vc_data.get(str(chat_id))
             current_poll_id = chat_data["current_poll_id"]
 
             if poll_id == current_poll_id:
@@ -321,7 +319,7 @@ async def init_app(app: Application) -> None:
     """
     r = redis.Redis(host=REDIS.hostname, port=REDIS.port, password=REDIS.password)
     try:
-        bot_data_bytes = r.get("bot_data")
+        bot_data_bytes = r.get(TOKEN)
         bot_data = json.loads(bot_data_bytes.decode('utf-8'))
     except Exception:
         logging.warning("No previous data discovered. Initializing empty bot data.")
@@ -338,7 +336,7 @@ async def init_app(app: Application) -> None:
         if chat_id not in chat_ids:
             chat_ids.append(chat_id)
             msg = await app.bot.send_message(chat_id=chat_id, disable_notification=True,
-                                       text="INFO:\nChess bot has been initiazed.")
+                                       text="INFO:\nChess bot has been initialized.")
             app.job_queue.run_once(delete_msg, 60, chat_id=chat_id, data=msg.message_id)
 
         hour = (int(time_str[:2]) - 8)%24 # Convert SGT to UTC
@@ -361,7 +359,7 @@ async def stop_app(app: Application) -> None:
     bot_data = app.bot_data
     r = redis.Redis(host=REDIS.hostname, port=REDIS.port, password=REDIS.password)
     bot_data_bytes = json.dumps(bot_data).encode('utf-8')
-    r.set("bot_data", bot_data_bytes)
+    r.set(TOKEN, bot_data_bytes)
     chat_ids = []
     for schedule in bot_data.get("schedules"):
         chat_id, _, _ = schedule

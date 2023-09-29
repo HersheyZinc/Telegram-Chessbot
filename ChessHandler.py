@@ -148,10 +148,10 @@ class ChessHandler:
         prompt = f"{turn} to move"
         choices, solution_ind = self.get_mcq_choices(board, choices_count=3, top_moves_count=7, rating=1500, depth=7)
         prompt = "\U0001F4CA Vote Chess \U0001F4CA\n" + prompt
-        return board_img, choices, solution_ind, prompt, board
+        return board_img, choices, solution_ind, prompt, board.fen()
 
 
-    def generate_votechess(self, board, move=None):
+    def generate_votechess(self, fen, move=None):
         """
         Takes player move and generates the next votechess board.
 
@@ -167,6 +167,7 @@ class ChessHandler:
                 board (chess.Board): updated board state
 
         """
+        board = chess.Board(fen)
         player_turn = board.turn
         if move:
             board.push_san(move) # move must be in san format
@@ -202,7 +203,7 @@ class ChessHandler:
 
         prompt = "\U0001F4CA Vote Chess \U0001F4CA\n" + prompt
         board_img = get_board_img(board)
-        return board_img, choices, solution_ind, prompt, board
+        return board_img, choices, solution_ind, prompt, board.fen()
 
 
     # Static functions
