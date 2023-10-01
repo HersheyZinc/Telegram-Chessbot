@@ -8,13 +8,13 @@ STOCKFISHURL = "https://github.com/official-stockfish/Stockfish/releases/downloa
 STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2" # Hardcoded path
 
 
-def download_chess_puzzles():
+def download_chess_puzzles(rating_lower=None, rating_upper=None, overwrite=False):
     """
     Downloads Lichess puzzle database and uncompresses it.
     Performs simple cleaning to reduce file size.
     """
     logging.info("Downloading Lichess puzzle database")
-    if os.path.isfile("chess_puzzles.csv"):
+    if os.path.isfile("chess_puzzles.csv") and not overwrite:
         logging.info("Lichess CSV file already exists! Skipping...")
         return
     
@@ -37,10 +37,13 @@ def download_chess_puzzles():
 
     # Filter puzzles by length and rating
     df2 = df[df["Themes"].str.contains("short")]
-    df2 = df2[df2["Rating"] > 1350]
+    if rating_lower:
+        df2 = df2[df2["Rating"] >= rating_lower]
+    if rating_upper:
+        df2 = df2[df2["Rating"] <= rating_upper]
 
     # Grab the first 1 million rows
-    df2 = df2.iloc[:1000000]
+    #df2 = df2.iloc[:1000000]
 
     # Keep only FEN, moves and rating rows
     df2 = df2[["FEN","Moves","Rating"]]
@@ -83,4 +86,7 @@ def setup():
 
 
 if __name__ == "__main__":
-    setup()
+    download_chess_puzzles(rating_lower=1333,rating_upper=None,overwrite=True)
+    df = pd.read_csv("chess_puzzles.csv")
+    print(df.shape)
+    print(df.head())

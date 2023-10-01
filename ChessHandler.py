@@ -16,6 +16,7 @@ class ChessHandler:
         self.puzzle_gen = self.puzzle_generator(self.puzzle_path)
 
 
+
     def puzzle_generator(self, csv_path = "chess_puzzles.csv", rating=None):
         """
         Generator that yields a random puzzle from the csv
@@ -35,7 +36,7 @@ class ChessHandler:
                 yield FEN, moves, puzzle_rating
 
 
-    def get_mcq_choices(self, board, solution_san=None, choices_count=4, top_moves_count=5, rating=2000, depth=21):
+    def get_mcq_choices(self, board, solution_san=None, choices_count=4, top_moves_count=5, rating=2500, depth=18):
         """
         Generates possible moves from a chess board.
 
@@ -151,7 +152,7 @@ class ChessHandler:
         return board_img, choices, solution_ind, prompt, board.fen()
 
 
-    def generate_votechess(self, fen, move=None):
+    def generate_votechess(self, fen, move=None, opponent_rating=2300):
         """
         Takes player move and generates the next votechess board.
 
@@ -173,7 +174,7 @@ class ChessHandler:
             board.push_san(move) # move must be in san format
             outcome = board.outcome()
             if not outcome:
-                board = self.cpu_move(board, rating=1300, depth=11)
+                board = self.cpu_move(board, rating=opponent_rating, depth=18)
 
         outcome = board.outcome()
         # Case: Game has ended
@@ -198,7 +199,7 @@ class ChessHandler:
             turn = "White" if board.turn else "Black"
             prompt = f"{turn} to move"
             choices, solution_ind = self.get_mcq_choices(board, choices_count=random.randint(3,4), top_moves_count=5,
-                                                         rating=2200, depth=18)
+                                                         rating=2500, depth=18)
 
 
         prompt = "\U0001F4CA Vote Chess \U0001F4CA\n" + prompt

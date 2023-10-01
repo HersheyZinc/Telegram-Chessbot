@@ -65,7 +65,7 @@ async def send_chess_puzzle(context: CallbackContext) -> None:
     await context.bot.send_poll(
         question = prompt, options = choices, correct_option_id=solution_ind,
         type=Poll.QUIZ, allows_multiple_answers = False, explanation=explanation,
-        chat_id=chat_id, is_anonymous = False, disable_notification=True
+        chat_id=chat_id, is_anonymous = True, disable_notification=True
     )
 
 
