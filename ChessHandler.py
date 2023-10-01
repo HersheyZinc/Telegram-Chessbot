@@ -152,7 +152,7 @@ class ChessHandler:
         return board_img, choices, solution_ind, prompt, board.fen()
 
 
-    def generate_votechess(self, fen, move=None, opponent_rating=2300):
+    def generate_votechess(self, fen, move=None, opponent_rating=2000):
         """
         Takes player move and generates the next votechess board.
 

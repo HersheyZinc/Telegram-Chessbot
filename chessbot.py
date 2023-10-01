@@ -1,7 +1,7 @@
 import datetime, logging, os, random, redis, json
 from enum import Enum
 from ChessHandler import ChessHandler
-from utils import INTRO_TEXT
+from utils import INTRO_TEXT, ADMIN, ANNOUNCE_TEXT
 import setup
 from urllib.parse import urlparse
 
@@ -26,6 +26,7 @@ from telegram.ext import (
     CommandHandler,
     PollAnswerHandler,
     CallbackContext,
+    Filters,
 )
 
 logging.basicConfig(
@@ -280,6 +281,21 @@ async def schedule_clear(update: Update, context: CallbackContext) -> None:
     reply = "All scheduled tasks have been cleared."
     await context.bot.send_message(chat_id=chat_id, text=reply, disable_notification=True)
 
+# --------------------------- Admin Functions --------------------------- #
+
+
+async def announcement(update: Update, context: CallbackContext) -> None:
+    """
+    Sends announcement to all chats with scheduled tasks
+    """
+    chat_ids = []
+    for schedule in context.bot_data.get("schedules"):
+        chat_id, _, _ = schedule
+        if chat_id not in chat_ids:
+            chat_ids.append(chat_id)
+            await context.bot.send_message(chat_id=chat_id, disable_notification=False,
+                                    text=ANNOUNCE_TEXT)
+
 
 # --------------------------- Background Functions --------------------------- #
 
@@ -328,7 +344,6 @@ async def init_app(app: Application) -> None:
         return
 
     app.bot_data = bot_data
-    chat_ids = []
     for schedule in bot_data.get("schedules"):
         chat_id, task, time_str = schedule
         job_name = task + str(chat_id)
@@ -345,13 +360,6 @@ async def init_app(app: Application) -> None:
         app.job_queue.run_daily(func, time=time, chat_id=chat_id,
                                 name=job_name)
 
-        continue
-        if chat_id not in chat_ids:
-                chat_ids.append(chat_id)
-                msg = await app.bot.send_message(chat_id=chat_id, disable_notification=True,
-                                        text="INFO:\nChess bot has been initialized.")
-                app.job_queue.run_once(delete_msg, 60, chat_id=chat_id, data=msg.message_id)
-
 
 async def stop_app(app: Application) -> None:
     """
@@ -361,17 +369,7 @@ async def stop_app(app: Application) -> None:
     r = redis.Redis(host=REDIS.hostname, port=REDIS.port, password=REDIS.password)
     bot_data_bytes = json.dumps(bot_data).encode('utf-8')
     r.set(TOKEN, bot_data_bytes)
-    return
-    chat_ids = []
-    for schedule in bot_data.get("schedules"):
-        chat_id, _, _ = schedule
-        if chat_id not in chat_ids:
-            chat_ids.append(chat_id)
-            msg = await app.bot.send_message(chat_id=chat_id, disable_notification=True,
-                                       text="INFO:\nChess bot is restarting...")
-            app.job_queue.run_once(delete_msg, 60, chat_id=chat_id, data=msg.message_id)
             
-
 
 # --------------------------- Main --------------------------- #
 
@@ -393,6 +391,8 @@ def main() -> None:
     app.add_handler(CommandHandler('votechess', chess_vote))
     app.add_handler(CommandHandler('schedule_votechess', schedule_chess_vote))
     app.add_handler(CommandHandler('stop_votechess', stop_chess_vote))
+
+    app.add_handler(CommandHandler("announcement", announcement, Filters.user(username=ADMIN)))
     
     #app.run_polling()
     

@@ -1,3 +1,4 @@
+ADMIN = "generic_dood"
 INTRO_TEXT = """
 Beep boop! Welcome to the Chessbot-3000. This bot lets you discover your inner chess with your friends!
 
@@ -19,3 +20,9 @@ Team up with your friends to win Stockfish!
 /schedule_votechess <time> - Schedules vote chess to be sent everyday (SGT)
 /stop_votechess - Ends the current game
     """
+
+ANNOUNCE_TEXT = """
+New update just dropped:
+1. Votechess - CPU rating buffed (1100->2000)
+2. Puzzles - Quizzes are now anonymous
+"""
