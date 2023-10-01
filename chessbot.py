@@ -26,7 +26,7 @@ from telegram.ext import (
     CommandHandler,
     PollAnswerHandler,
     CallbackContext,
-    Filters,
+    filters,
 )
 
 logging.basicConfig(
@@ -392,7 +392,7 @@ def main() -> None:
     app.add_handler(CommandHandler('schedule_votechess', schedule_chess_vote))
     app.add_handler(CommandHandler('stop_votechess', stop_chess_vote))
 
-    app.add_handler(CommandHandler("announcement", announcement, Filters.user(username=ADMIN)))
+    app.add_handler(CommandHandler("announcement", announcement, filters.user(username=ADMIN)))
     
     #app.run_polling()
     
