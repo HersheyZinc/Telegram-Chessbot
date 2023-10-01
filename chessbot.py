@@ -392,8 +392,8 @@ def main() -> None:
     app.add_handler(CommandHandler('schedule_votechess', schedule_chess_vote))
     app.add_handler(CommandHandler('stop_votechess', stop_chess_vote))
 
-    app.add_handler(CommandHandler("announcement", announcement, filters.user(username=ADMIN)))
-    
+    app.add_handler(CommandHandler("announcement", announcement, filters.Chat(username=ADMIN)))
+
     #app.run_polling()
     
     app.run_webhook(

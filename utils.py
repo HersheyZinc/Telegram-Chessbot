@@ -1,4 +1,4 @@
-ADMIN = "generic_dood"
+ADMIN = ["generic_dood"]
 INTRO_TEXT = """
 Beep boop! Welcome to the Chessbot-3000. This bot lets you discover your inner chess with your friends!
 
