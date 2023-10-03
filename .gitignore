@@ -1,5 +1,5 @@
 board.png
-config.py
+utils/config.py
 test.py
 stockfish
 __pycache__

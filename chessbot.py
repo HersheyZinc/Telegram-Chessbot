@@ -1,8 +1,8 @@
 import datetime, logging, os, random, redis, json
 from enum import Enum
-from ChessHandler import ChessHandler
-from utils import INTRO_TEXT, ADMIN, ANNOUNCE_TEXT
-import setup
+from handlers.ChessHandler import ChessHandler
+from utils.utils import INTRO_TEXT, ADMIN, ANNOUNCE_TEXT
+import utils.setup as setup
 from urllib.parse import urlparse
 
 
@@ -12,7 +12,7 @@ APPNAME = str(os.environ['APPNAME']) # Set environment var via Heroku
 PORT = int(os.environ.get('PORT', '8443'))
 REDIS_URL = os.environ.get('REDISCLOUD_URL')
 
-#from config import TOKEN, REDIS_URL
+#from utils.config import TOKEN, REDIS_URL
 
 REDIS = urlparse(REDIS_URL)
 from telegram import (
