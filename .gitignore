@@ -2,3 +2,4 @@ board.png
 config.py
 test.py
 stockfish
+__pycache__

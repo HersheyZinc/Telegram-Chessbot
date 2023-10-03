@@ -11,6 +11,7 @@ class ChessHandler:
     def __init__(self, stockfish_path, puzzle_path):
 
         self.stockfish = Stockfish(path=stockfish_path,depth=15)
+        #self.stockfish.update_engine_parameters({"Hash": 128, "Threads": "4"})
 
         self.puzzle_path = puzzle_path
         self.puzzle_gen = self.puzzle_generator(self.puzzle_path)
@@ -141,13 +142,13 @@ class ChessHandler:
         board = chess.Board()
         # Randomize starting player
         if random.choice([True, False]):
-            board = self.cpu_move(board)
+            board = self.cpu_move(board,rating=2000,depth=7)
 
         board_img = get_board_img(board)
 
         turn = "White" if board.turn else "Black"
         prompt = f"{turn} to move"
-        choices, solution_ind = self.get_mcq_choices(board, choices_count=3, top_moves_count=7, rating=1500, depth=7)
+        choices, solution_ind = self.get_mcq_choices(board, choices_count=3, top_moves_count=7, rating=2000, depth=7)
         prompt = "\U0001F4CA Vote Chess \U0001F4CA\n" + prompt
         return board_img, choices, solution_ind, prompt, board.fen()
 
@@ -174,7 +175,7 @@ class ChessHandler:
             board.push_san(move) # move must be in san format
             outcome = board.outcome()
             if not outcome:
-                board = self.cpu_move(board, rating=opponent_rating, depth=18)
+                board = self.cpu_move(board, rating=opponent_rating, depth=17)
 
         outcome = board.outcome()
         # Case: Game has ended

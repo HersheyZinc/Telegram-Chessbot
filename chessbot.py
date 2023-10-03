@@ -120,6 +120,7 @@ async def send_chess_vote(context: CallbackContext) -> None:
     """
     Sends a votechess poll to the chat.
     """
+
     chat_id = context.job.chat_id
     vc_data = context.bot_data.get("vote_chess")
 
@@ -167,7 +168,7 @@ async def send_chess_vote(context: CallbackContext) -> None:
     # Case: Game has ended
     else:
         message = await context.bot.send_message(chat_id=chat_id, text=prompt)
-        vc_data.pop(chat_id)
+        vc_data.pop(str(chat_id))
 
     context.bot_data.update({"vote_chess": vc_data})
 
@@ -403,7 +404,6 @@ def main() -> None:
     webhook_url=f"https://{APPNAME}.herokuapp.com/"
     )
     
-
 if __name__ == "__main__":
     setup.setup()
     chess_handler = ChessHandler(setup.STOCKFISH_PATH, setup.PUZZLE_PATH)

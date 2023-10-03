@@ -2,19 +2,19 @@ import pandas as pd
 import os, requests, zstandard, logging
 
 PUZZLEURL = "https://database.lichess.org/lichess_db_puzzle.csv.zst"
-PUZZLE_PATH = "./chess_puzzles.csv" # Hardcoded path
+PUZZLE_PATH = "./data/chess_puzzles.csv" # Hardcoded path
 
 STOCKFISHURL = "https://github.com/official-stockfish/Stockfish/releases/download/sf_16/stockfish-ubuntu-x86-64-avx2.tar"
 STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2" # Hardcoded path
 
 
-def download_chess_puzzles(rating_lower=None, rating_upper=None, overwrite=False):
+def download_chess_puzzles(rating_lower=None, rating_upper=None, count=1000000, overwrite=False):
     """
     Downloads Lichess puzzle database and uncompresses it.
     Performs simple cleaning to reduce file size.
     """
     logging.info("Downloading Lichess puzzle database")
-    if os.path.isfile("chess_puzzles.csv") and not overwrite:
+    if os.path.isfile(PUZZLE_PATH) and not overwrite:
         logging.info("Lichess CSV file already exists! Skipping...")
         return
     
@@ -43,13 +43,13 @@ def download_chess_puzzles(rating_lower=None, rating_upper=None, overwrite=False
         df2 = df2[df2["Rating"] <= rating_upper]
 
     # Grab the first 1 million rows
-    #df2 = df2.iloc[:1000000]
+    df2 = df2.iloc[:count]
 
     # Keep only FEN, moves and rating rows
     df2 = df2[["FEN","Moves","Rating"]]
 
     # Write cleaned csv file
-    df2.to_csv("chess_puzzles.csv",index=False)
+    df2.to_csv(PUZZLE_PATH,index=False)
     os.remove("lichess_db_puzzle.csv")
     os.remove("lichess_db_puzzle.csv.zst")
 
@@ -80,13 +80,12 @@ def setup():
     Downloads and formats necessary files needed for chessbot to function
     """
     logging.info("Downloading database and chess engines...")
-    download_chess_puzzles()
+    os.makedirs("./data", exist_ok=True)
+    download_chess_puzzles(rating_lower=1450)
     download_stockfish()
     logging.info("Download complete!")
 
 
 if __name__ == "__main__":
-    download_chess_puzzles(rating_lower=1333,rating_upper=None,overwrite=True)
-    df = pd.read_csv("chess_puzzles.csv")
+    df = pd.read_csv(PUZZLE_PATH)
     print(df.shape)
-    print(df.head())

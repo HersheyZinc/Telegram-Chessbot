@@ -1,0 +1,3 @@
+fen = "wwwwwwwwbbbbbbbbxxxxxxxxwwwwwwwwbbbbbbbbxxxxxxxxwwwwwwwwbbbbbbbb w"
+game_moves = "f5d6c4d3e6f4e3f6c5b4e7f3c6d7b5a5c3b3g5h5g4h4e2g6b6d8c7c8a4a6a7f1a3c2d2b2e1b7g3h3f2d1a1a2b1a8c1g1f7g8e8f8b8g7h8h7h6h2g2h1"
+
