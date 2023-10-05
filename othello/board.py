@@ -39,13 +39,13 @@ class Board:
     @staticmethod
     def move2coord(move:str) -> tuple:
         c = Board.ROWNAMES.index(move[0].lower())
-        r = int(move[1])
+        r = 8 - int(move[1])
         return (r,c)
     
     @staticmethod
     def coord2move(coord:tuple) -> str:
         r,c = coord
-        return f"{Board.ROWNAMES[c]}{r}"
+        return f"{Board.ROWNAMES[c]}{8-r}"
 
     def all_legal_moves(self, PLAYER: int=None) -> set:
         '''Return all legal moves for the player'''
