@@ -10,8 +10,8 @@ Utility
 
 \U0001F9E9 Chess Puzzles \U0001F9E9
 Challenge puzzles from the Lichess puzzle database!
-/puzzle - Sends a puzzle
-/schedule_dailypuzzle <time> - Schedules puzzle to be sent everyday (SGT)
+/chess - Sends a puzzle
+/schedule_chess <time> - Schedules puzzle to be sent everyday (SGT)
 
 
 \U0001F4CA Vote Chess \U0001F4CA
@@ -19,6 +19,11 @@ Team up with your friends to win Stockfish!
 /votechess - Ends the current vote and initiates the next turn
 /schedule_votechess <time> - Schedules vote chess to be sent everyday (SGT)
 /stop_votechess - Ends the current game
+
+
+\U0001F9E9 Othello Puzzles \U0001F9E9
+WORK IN PROGRESS
+/othello - Sends a puzzle
     """
 
 ANNOUNCE_TEXT = """

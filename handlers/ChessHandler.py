@@ -18,7 +18,7 @@ class ChessHandler:
 
 
 
-    def puzzle_generator(self, csv_path = "chess_puzzles.csv", rating=None):
+    def puzzle_generator(self, csv_path, rating=None):
         """
         Generator that yields a random puzzle from the csv
         """
@@ -107,7 +107,7 @@ class ChessHandler:
         try:
             FEN, moves, puzzle_rating = next(self.puzzle_gen)
         except Exception:
-            self.puzzle_gen = self.puzzle_generator()
+            self.puzzle_gen = self.puzzle_generator(self.puzzle_path)
             FEN, moves, puzzle_rating = next(self.puzzle_gen)
         solution_line = moves.split(" ")
         first_move = solution_line.pop(0)

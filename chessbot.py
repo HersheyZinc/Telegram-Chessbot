@@ -1,18 +1,19 @@
 import datetime, logging, os, random, redis, json
 from enum import Enum
 from handlers.ChessHandler import ChessHandler
+from handlers.OthelloHandler import OthelloHandler
 from utils.utils import INTRO_TEXT, ADMIN, ANNOUNCE_TEXT
 import utils.setup as setup
 from urllib.parse import urlparse
 
-'''
+
 TOKEN = str(os.environ['TOKEN']) # Set environment variable via Heroku
 SECRET = str(os.environ['SECRET']) # Set environment variable via Heroku
 APPNAME = str(os.environ['APPNAME']) # Set environment var via Heroku
 PORT = int(os.environ.get('PORT', '8443'))
 REDIS_URL = os.environ.get('REDISCLOUD_URL')
-'''
-from utils.config import TOKEN, REDIS_URL
+
+#from utils.config import TOKEN, REDIS_URL
 
 REDIS = urlparse(REDIS_URL)
 from telegram import (
@@ -227,6 +228,36 @@ async def schedule_chess_vote(update: Update, context: CallbackContext) -> None:
     await context.bot.send_message(chat_id=update.effective_chat.id, text=reply)
 
 
+# --------------------------- Othello Functions --------------------------- #
+
+
+async def send_othello_puzzle(context: CallbackContext) -> None:
+    """
+    Sends a puzzle poll to the chat.
+    """
+    chat_id = context.job.chat_id
+    board_img, choices, solution_ind, prompt, explanation = othello_handler.generate_puzzle()
+
+    await context.bot.send_photo(photo=board_img,chat_id=chat_id)
+
+    await context.bot.send_poll(
+        question = prompt, options = choices, correct_option_id=solution_ind,
+        type=Poll.QUIZ, allows_multiple_answers = False, explanation=explanation,
+        chat_id=chat_id, is_anonymous = True, disable_notification=True
+    )
+
+
+async def othello_puzzle(update: Update, context: CallbackContext) -> None:
+    """
+    Schedules a puzzle to be sent immediately.
+    """
+    chat_id = update.effective_chat.id
+    msg_id = update.effective_message.message_id
+    context.job_queue.run_once(send_othello_puzzle, 0, chat_id=update.message.chat_id)
+    context.job_queue.run_once(delete_msg, datetime.timedelta(minutes=30), chat_id=chat_id, data=msg_id)
+
+
+
 # --------------------------- Utility Functions --------------------------- #
 
 
@@ -386,25 +417,28 @@ def main() -> None:
     app.add_handler(CommandHandler('schedule_clear', schedule_clear))
     app.add_handler(PollAnswerHandler(receive_poll_answer))
 
-    app.add_handler(CommandHandler('puzzle', chess_puzzle))
-    app.add_handler(CommandHandler('schedule_dailypuzzle', schedule_chess_puzzle))
+    app.add_handler(CommandHandler('chess', chess_puzzle))
+    app.add_handler(CommandHandler('schedule_chess', schedule_chess_puzzle))
 
     app.add_handler(CommandHandler('votechess', chess_vote))
     app.add_handler(CommandHandler('schedule_votechess', schedule_chess_vote))
     app.add_handler(CommandHandler('stop_votechess', stop_chess_vote))
 
+    app.add_handler(CommandHandler('othello', othello_puzzle))
+
     app.add_handler(CommandHandler("announcement", announcement, filters.Chat(username=ADMIN)))
 
-    app.run_polling()
-    '''
+    #app.run_polling()
+    
     app.run_webhook(
     listen="0.0.0.0",
     port=PORT,
     secret_token=SECRET,
     webhook_url=f"https://{APPNAME}.herokuapp.com/"
     )
-    '''
+    
 if __name__ == "__main__":
     setup.setup()
     chess_handler = ChessHandler(setup.STOCKFISH_PATH, setup.PUZZLE_PATH)
+    othello_handler = OthelloHandler("data/othello_puzzles.csv")
     main()
