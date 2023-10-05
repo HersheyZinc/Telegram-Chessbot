@@ -5,14 +5,14 @@ from utils.utils import INTRO_TEXT, ADMIN, ANNOUNCE_TEXT
 import utils.setup as setup
 from urllib.parse import urlparse
 
-
+'''
 TOKEN = str(os.environ['TOKEN']) # Set environment variable via Heroku
 SECRET = str(os.environ['SECRET']) # Set environment variable via Heroku
 APPNAME = str(os.environ['APPNAME']) # Set environment var via Heroku
 PORT = int(os.environ.get('PORT', '8443'))
 REDIS_URL = os.environ.get('REDISCLOUD_URL')
-
-#from utils.config import TOKEN, REDIS_URL
+'''
+from utils.config import TOKEN, REDIS_URL
 
 REDIS = urlparse(REDIS_URL)
 from telegram import (
@@ -395,15 +395,15 @@ def main() -> None:
 
     app.add_handler(CommandHandler("announcement", announcement, filters.Chat(username=ADMIN)))
 
-    #app.run_polling()
-    
+    app.run_polling()
+    '''
     app.run_webhook(
     listen="0.0.0.0",
     port=PORT,
     secret_token=SECRET,
     webhook_url=f"https://{APPNAME}.herokuapp.com/"
     )
-    
+    '''
 if __name__ == "__main__":
     setup.setup()
     chess_handler = ChessHandler(setup.STOCKFISH_PATH, setup.PUZZLE_PATH)
