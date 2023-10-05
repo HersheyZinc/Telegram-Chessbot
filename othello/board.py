@@ -39,13 +39,13 @@ class Board:
     @staticmethod
     def move2coord(move:str) -> tuple:
         c = Board.ROWNAMES.index(move[0].lower())
-        r = 8 - int(move[1])
+        r = int(move[1]) - 1
         return (r,c)
     
     @staticmethod
     def coord2move(coord:tuple) -> str:
         r,c = coord
-        return f"{Board.ROWNAMES[c]}{8-r}"
+        return f"{Board.ROWNAMES[c]}{r + 1}"
 
     def all_legal_moves(self, PLAYER: int=None) -> set:
         '''Return all legal moves for the player'''
@@ -204,9 +204,11 @@ class Board:
     
     def evaluate_board(self) -> int:
         '''Evaluate the board as per various heuristics.'''
-
         # coin parity heuristic
         coin_parity = 100 * (self.black_disc_count - self.white_disc_count) / (self.black_disc_count + self.white_disc_count)
+        
+        if self.check_game_over():
+            return coin_parity * 3
         
         # mobility heuristic value
         black_mobility = len(self.all_legal_moves(Board.BLACK))

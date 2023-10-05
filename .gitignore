@@ -2,3 +2,5 @@ utils/config.py
 test.py
 stockfish
 __pycache__
+board.png
+test.ipynb

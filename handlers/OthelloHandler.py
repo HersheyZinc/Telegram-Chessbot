@@ -8,7 +8,6 @@ class OthelloHandler:
     Class for handling chess games and stockfish engine
     """
     def __init__(self, puzzle_path):
-        #self.stockfish.update_engine_parameters({"Hash": 128, "Threads": "4"})
 
         self.puzzle_path = puzzle_path
         self.puzzle_gen = self.puzzle_generator(self.puzzle_path)
@@ -38,7 +37,9 @@ class OthelloHandler:
         choices.insert(solution_ind, solution)
         turn = "White" if b.turn==Board.WHITE else "Black"
         prompt = f"{turn} to move"
-        explanation = "Yes"
+        moves = minimax.find_best_moves(b,depth=5)
+        explanation = "\n".join([f"{Board.coord2move(x['move'])}: {x['eval']}" for x in moves])
+
 
 
         return board_img, choices, solution_ind, prompt, explanation

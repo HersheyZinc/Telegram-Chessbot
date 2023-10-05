@@ -266,7 +266,7 @@ async def start(update: Update, context: CallbackContext) -> None:
     Inform user about what this bot can do
     """
 
-    reply_keyboard = [["/puzzle", "/votechess"]]
+    reply_keyboard = [["/chess", "/votechess"],["/othello"]]
     reply_markup = ReplyKeyboardMarkup(
             reply_keyboard, one_time_keyboard=True, input_field_placeholder="Select command to start."
         )
