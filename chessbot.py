@@ -276,7 +276,7 @@ async def schedule_clear(update: Update, context: CallbackContext) -> None:
         remove_queued(context.job_queue, job_name)
     
     schedules = context.bot_data.get("schedules")
-    cleared_schedules = [sched for sched in schedules if sched[0]==chat_id]
+    cleared_schedules = [sched for sched in schedules if sched[0]!=chat_id]
     context.bot_data.update({"schedules":cleared_schedules})
 
     reply = "All scheduled tasks have been cleared."
