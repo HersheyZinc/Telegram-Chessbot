@@ -318,6 +318,13 @@ async def delete_msg(context: CallbackContext) -> None:
     await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
 
 
+async def save_bot_data(context: CallbackContext) -> None:
+    bot_data = context.bot_data
+    r = redis.Redis(host=REDIS.hostname, port=REDIS.port, password=REDIS.password)
+    bot_data_bytes = json.dumps(bot_data).encode('utf-8')
+    r.set(TOKEN, bot_data_bytes)
+
+
 async def receive_poll_answer(update: Update, context: CallbackContext) -> None:
     """
     Updates bot data whenever a user submits a poll vote.
@@ -378,10 +385,9 @@ async def init_app(app: Application) -> None:
         app.job_queue.run_daily(func, time=time, chat_id=chat_id,
                                 name=job_name, data=data)
     
-    return
+    
     time = datetime.time(hour=3)
-    app.job_queue.run_daily(func, time=time, chat_id=chat_id,
-                                name=job_name, data=data)
+    app.job_queue.run_daily(save_bot_data, time=time, name="maintenance")
     
 
 
@@ -391,14 +397,10 @@ async def stop_app(app: Application) -> None:
     Inform users that telegram bot is shutting down
     """
     bot_data = app.bot_data
-    await save_data(bot_data)
-
-
-async def save_data(bot_data) -> None:
     r = redis.Redis(host=REDIS.hostname, port=REDIS.port, password=REDIS.password)
     bot_data_bytes = json.dumps(bot_data).encode('utf-8')
     r.set(TOKEN, bot_data_bytes)
-            
+    
 
 # --------------------------- Main --------------------------- #
 

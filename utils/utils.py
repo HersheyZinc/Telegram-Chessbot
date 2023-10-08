@@ -22,7 +22,10 @@ Utility
 
 
 ANNOUNCE_TEXT = """
-New update just dropped:
-1. Votechess - CPU rating buffed (1100->2000)
-2. Puzzles - Quizzes are now anonymous
+New update introducing Othello/Reversi!
+
+I'm not gonna teach you how to play it, but here are the gamemodes:
+1. Puzzle - Get an endgame puzzle and find the only move that wins you the game!
+2. Vote Othello - Discuss and vote on the best move and pave your way to victory!
+
 """
