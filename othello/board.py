@@ -105,9 +105,10 @@ class Board:
         move = Board.move2coord(move)
         return move in self.all_legal_moves()
 
-    def set_discs(self, row: int, col: int, PLAYER: int) -> None:
+    def set_discs(self, row: int, col: int, PLAYER: int=None) -> None:
         '''Set the discs on the board as per the move made on the given cell'''
-        
+        if not PLAYER:
+            PLAYER = self.turn
         self.board[row, col] = PLAYER
         OPPONENT = PLAYER * - 1
         
@@ -148,7 +149,7 @@ class Board:
         print(self.board)
 
 
-    def get_board(self):
+    def get_board_img(self):
         im = Image.open("./othello/othello_board.png")
         draw = ImageDraw.Draw(im)
         border_size = 34
@@ -180,7 +181,7 @@ class Board:
             outcome = Board.WHITE
         else:
             outcome = None
-        output = {"outcome": outcome, "white": self.white_disc_count, "black": self.black_disc_count}
+        output = {"winner": outcome, "white": self.white_disc_count, "black": self.black_disc_count}
         return output
 
 
@@ -208,7 +209,7 @@ class Board:
         coin_parity = 100 * (self.black_disc_count - self.white_disc_count) / (self.black_disc_count + self.white_disc_count)
         
         if self.check_game_over():
-            return coin_parity * 3
+            return self.black_disc_count - self.white_disc_count
         
         # mobility heuristic value
         black_mobility = len(self.all_legal_moves(Board.BLACK))
@@ -227,7 +228,7 @@ class Board:
         else:
             corner_value = 100 * (black_corners - white_corners) / (black_corners + white_corners)
 
-        return coin_parity + actual_mobility + corner_value
+        return (coin_parity + actual_mobility + corner_value)/3
 
 
     def set_board_state(self, board_state:str):

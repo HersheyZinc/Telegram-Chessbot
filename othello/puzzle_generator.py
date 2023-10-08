@@ -3,12 +3,20 @@ from othello.board import Board
 import othello.minimax as minimax
 from tqdm import tqdm
 
+def get_sign(evaluation):
+    if evaluation > 0:
+        return 1
+    elif evaluation < 0:
+        return -1
+    else:
+        return 0
+
 
 def generate_puzzles(src_csv, dest_csv, n=100):
     df = pd.read_csv(src_csv)
     puzzle_count = 0
 
-    puzzle_df = pd.DataFrame(columns=["board_state", "solution", "moves"])
+    puzzle_df = pd.DataFrame(columns=["board_state", "solution", "moves", "difficulty"])
     for game_moves in tqdm(df["game_moves"]):
         b = Board()
         move_count = 0
@@ -21,17 +29,60 @@ def generate_puzzles(src_csv, dest_csv, n=100):
             move_count+=1
             if move_count < 55:
                 continue
+            elif move_count < 58:
+                base_difficulty = 2
             else:
-                depth = 5
-                threshold = 150
-            moves = minimax.find_best_moves(b,depth=depth)
-            if len(moves) < 3:
+                base_difficulty = 1
+            
+            moves = minimax.find_best_moves(b,depth=10)
+            if len(moves) < 2:
                 continue
-            elif abs(moves[0]["eval"]) - abs(moves[1]["eval"]) > threshold:
-                solution = Board.coord2move(moves[0]["move"])
-                moves = " ".join([Board.coord2move(move["move"]) for move in moves[1:]])
-                row = {"board_state": b.get_board_state(), "solution": solution, "moves":moves}
-                puzzle_df.loc[len(puzzle_df)] = row
-                puzzle_count+=1
+            elif get_sign(moves[0]["eval"]) == get_sign(moves[1]["eval"]):
+                continue
+            
+
+            if len(moves) < 3:
+                option_difficulty = 0
+            else:
+                option_difficulty = 1
+
+            difficulty = base_difficulty + option_difficulty
+            solution = moves[0]["move"]
+            moves = " ".join([move["move"] for move in moves[1:]])
+            row = {"board_state": b.get_board_state(), "solution": solution, "moves":moves, "difficulty": difficulty}
+            puzzle_df.loc[len(puzzle_df)] = row
+            puzzle_count+=1
                 
     puzzle_df.to_csv(dest_csv,index=False)
+
+
+
+def generate_votechess_positions(src_csv, dest_csv, n=100):
+    df = pd.read_csv(src_csv)
+    df = df.sample(n)
+    vc_df = pd.DataFrame(columns=["board_state"])
+    for index in tqdm(df.index):
+        if df["winner"][index] == 1:
+            winner = Board.WHITE
+        else:
+            winner = Board.BLACK
+        
+        game_moves = df["game_moves"][index]
+
+        b = Board()
+        move_count = 0
+
+        while len(game_moves)>=2:
+            move = game_moves[:2]
+            game_moves = game_moves[2:]
+            b.push(move)
+            move_count+=1
+            if (move_count >= 52) and (move_count < 60) and b.turn == winner:
+                row = {"board_state": b.get_board_state()}
+                vc_df.loc[len(vc_df)] = row
+                break
+        
+    vc_df.to_csv(dest_csv, index=False)
+
+
+
