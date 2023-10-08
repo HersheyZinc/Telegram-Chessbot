@@ -38,7 +38,7 @@ class OthelloHandler:
         turn = "White" if b.turn==Board.WHITE else "Black"
         prompt = f"\U000026AA Othello Puzzle \U000026AB\n{turn} to move"
         moves = minimax.find_best_moves(b,depth=5)
-        explanation = f"{moves[0]['move']} leads to a +{abs(moves[0]['eval'])} disc count."
+        explanation = f"{moves[0]['move']} leads to a +{abs(moves[0]['eval'])} disc count.\n"
         explanation = explanation + "\n".join([f"{x['move']}: -{abs(x['eval'])}" for x in moves[1:]])
 
         return board_img, choices, solution_ind, prompt, explanation

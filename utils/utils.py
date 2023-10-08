@@ -16,6 +16,7 @@ Beep boop! Welcome to the Chessbot-3000. This bot lets you discover your inner c
 
 Utility
 /start - Displays the commands available
+/schedule <game> <time> - Schedules a game to be sent everyday
 /schedule_view - Displays all scheduled tasks
 /schedule_clear - Clears all scheduled tasks
     """
