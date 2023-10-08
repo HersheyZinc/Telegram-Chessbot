@@ -6,7 +6,7 @@ PUZZLE_PATH = "./data/chess_puzzles.csv" # Hardcoded path
 
 STOCKFISHURL = "https://github.com/official-stockfish/Stockfish/releases/download/sf_16/stockfish-ubuntu-x86-64-avx2.tar"
 STOCKFISH_PATH = "./stockfish/stockfish-ubuntu-x86-64-avx2" # Hardcoded path
-
+#STOCKFISH_PATH = "./stockfish/stockfish-windows-x86-64-avx2" # Hardcoded path
 
 def download_chess_puzzles(rating_lower=None, rating_upper=None, count=1000000, overwrite=False):
     """

@@ -1,2 +1,2 @@
-worker: python3 chessbot.py
-web: python3 chessbot.py
+worker: python3 bot.py
+web: python3 bot.py
