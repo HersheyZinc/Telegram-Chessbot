@@ -49,12 +49,12 @@ def eval_board_early(board: Board):
     elif board.white_disc_count == 0:
         coin_parity = 100
     else:
-        coin_parity = 100 * -(board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
+        coin_parity = 25 * (board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
     
     # mobility heuristic value
     black_mobility = len(board.all_legal_moves(Board.BLACK))
     white_mobility = len(board.all_legal_moves(Board.WHITE))
-    actual_mobility = 100 * (black_mobility - white_mobility) / (black_mobility + white_mobility)
+    actual_mobility = 150 * (black_mobility - white_mobility) / (black_mobility + white_mobility)
 
 
     # static weight heuristic value
@@ -74,7 +74,7 @@ def eval_board_early(board: Board):
     if black_weights + white_weights == 0:
         weight_value = 0
     else:
-        weight_value = 100 * (black_weights - white_weights) / (black_weights + white_weights)
+        weight_value = 125 * (black_weights - white_weights) / (black_weights + white_weights)
 
 
     return (coin_parity + actual_mobility + weight_value)/3
