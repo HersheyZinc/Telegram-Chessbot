@@ -21,14 +21,14 @@ def eval_board_mid(board: Board):
 
     # static weight heuristic value
     static_weights = np.array([
-                    [5, -3, 2, 2, 2, 2, -3, 5],
+                    [7, -3, 2, 2, 2, 2, -3, 7],
                     [-3, -4, -1, -1, -1, -1, -4, -3],
                     [2, -1, 1, 0, 0, 1, -1, 2],
                     [2, -1, 0, 1, 1, 0, -1, 2],
                     [2, -1, 0, 1, 1, 0, -1, 2],
                     [2, -1, 1, 0, 0, 1, -1, 2],
                     [-3, -4, -1, -1, -1, -1, -4, -3],
-                    [5, -3, 2, 2, 2, 2, -3, 5]
+                    [7, -3, 2, 2, 2, 2, -3, 7]
                   ]).flatten()
     black_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.BLACK)
     white_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.WHITE)
