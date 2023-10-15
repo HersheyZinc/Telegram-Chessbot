@@ -11,7 +11,7 @@ def eval_board_mid(board: Board):
         return eval_board_end(board)
     
     # coin parity heuristic
-    coin_parity = 50 * (board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
+    coin_parity = 25 * (board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
     
     # mobility heuristic value
     black_mobility = len(board.all_legal_moves(Board.BLACK))
@@ -36,7 +36,7 @@ def eval_board_mid(board: Board):
     if black_weights + white_weights == 0:
         weight_value = 0
     else:
-        weight_value = 100 * (black_weights - white_weights) / (black_weights + white_weights)
+        weight_value = 125 * (black_weights - white_weights) / (black_weights + white_weights)
 
 
     return (coin_parity + actual_mobility + weight_value)/2
