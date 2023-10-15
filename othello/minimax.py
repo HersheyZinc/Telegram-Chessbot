@@ -16,7 +16,7 @@ def eval_board_mid(board: Board):
     # mobility heuristic value
     black_mobility = len(board.all_legal_moves(Board.BLACK))
     white_mobility = len(board.all_legal_moves(Board.WHITE))
-    actual_mobility = 125 * (black_mobility - white_mobility) / (black_mobility + white_mobility)
+    actual_mobility = 50 * (black_mobility - white_mobility) / (black_mobility + white_mobility)
 
 
     # static weight heuristic value
@@ -36,48 +36,11 @@ def eval_board_mid(board: Board):
     if black_weights + white_weights == 0:
         weight_value = 0
     else:
-        weight_value = 125 * (black_weights - white_weights) / (black_weights + white_weights)
+        weight_value = 100 * (black_weights - white_weights) / (black_weights + white_weights)
 
 
-    return (coin_parity + actual_mobility + weight_value)/3
+    return (coin_parity + actual_mobility + weight_value)/2
 
-
-def eval_board_early(board: Board):
-    # coin parity heuristic
-    if board.black_disc_count == 0:
-        coin_parity = -100
-    elif board.white_disc_count == 0:
-        coin_parity = 100
-    else:
-        coin_parity = 25 * (board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
-    
-    # mobility heuristic value
-    black_mobility = len(board.all_legal_moves(Board.BLACK))
-    white_mobility = len(board.all_legal_moves(Board.WHITE))
-    actual_mobility = 150 * (black_mobility - white_mobility) / (black_mobility + white_mobility)
-
-
-    # static weight heuristic value
-    static_weights = np.array([
-                    [5, -3, 2, 2, 2, 2, -3, 5],
-                    [-3, -4, -1, -1, -1, -1, -4, -3],
-                    [2, -1, 1, 0, 0, 1, -1, 2],
-                    [2, -1, 0, 1, 1, 0, -1, 2],
-                    [2, -1, 0, 1, 1, 0, -1, 2],
-                    [2, -1, 1, 0, 0, 1, -1, 2],
-                    [-3, -4, -1, -1, -1, -1, -4, -3],
-                    [5, -3, 2, 2, 2, 2, -3, 5]
-                  ]).flatten()
-    black_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.BLACK)
-    white_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.WHITE)
-
-    if black_weights + white_weights == 0:
-        weight_value = 0
-    else:
-        weight_value = 125 * (black_weights - white_weights) / (black_weights + white_weights)
-
-
-    return (coin_parity + actual_mobility + weight_value)/3
 
 
 def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_board_end) -> int:
@@ -132,9 +95,8 @@ def find_best_moves(position: Board, n=4, depth=3) -> list:
             temp_position = deepcopy(position)
             temp_position.push((row,col))
 
-            if temp_position.move < 20:
-                eval_function, depth = eval_board_early, 3
-            elif temp_position.move < 52:
+
+            if temp_position.move < 52:
                 eval_function, depth = eval_board_mid, 3
             else:
                 eval_function, depth = eval_board_end, 10
