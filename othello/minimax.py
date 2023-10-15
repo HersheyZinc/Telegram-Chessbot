@@ -59,14 +59,14 @@ def eval_board_early(board: Board):
 
     # static weight heuristic value
     static_weights = np.array([
-                    [10, -5, 2, 2, 2, 2, -5, 10],
-                    [-5, -5, -1, -1, -1, -1, -5, -5],
+                    [10, -8, 2, 2, 2, 2, -8, 10],
+                    [-8, -9, -1, -1, -1, -1, -9, -8],
                     [2, -1, 1, 0, 0, 1, -1, 2],
                     [2, -1, 0, 3, 3, 0, -1, 2],
                     [2, -1, 0, 3, 3, 0, -1, 2],
                     [2, -1, 1, 0, 0, 1, -1, 2],
-                    [-5, -5, -1, -1, -1, -1, -5, -5],
-                    [10, -5, 2, 2, 2, 2, -5, 10]
+                    [-8, -9, -1, -1, -1, -1, -9, -8],
+                    [10, -8, 2, 2, 2, 2, -8, 10]
                   ]).flatten()
     black_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.BLACK)
     white_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.WHITE)
