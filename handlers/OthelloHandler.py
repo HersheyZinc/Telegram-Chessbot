@@ -90,11 +90,13 @@ class OthelloHandler:
 
 
     def new_votechess(self):
+        '''
         temp_path = "./data/othello_votechess.csv"
         df = pd.read_csv(temp_path)
         board_state = df.loc[random.randint(0,150)]["board_state"]
-
         board = Board(board_state)
+        '''
+        board = Board()
         if random.choice([True, False]):
             self.cpu_move(board)
 

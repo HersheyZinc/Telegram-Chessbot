@@ -19,7 +19,8 @@ class Board:
     def __init__(self, board_state=None) -> None:
         '''Initiliaze the Othello game board with a 8x8 numpy matrix'''
         self.board = np.array([0]*8, dtype = np.int8)   # initiliasing 1D array with the first row of 8 zeroes
-        self.board = self.board[np.newaxis, : ]         # expanding 1D array to 2D array
+        self.board = self.board[np.newaxis, : ]   
+        self.move = 0      # expanding 1D array to 2D array
         for _ in range(3):                              # increasing rows till 8
             self.board = np.concatenate((self.board, self.board), axis = 0)
         self.black_disc_count = self.white_disc_count = 0
@@ -140,6 +141,7 @@ class Board:
             x, y = move
         self.set_discs(x,y,self.turn)
         self.turn *= -1
+        self.move += 1
 
         if len(self.all_legal_moves()) == 0:
             self.turn *= -1
@@ -174,6 +176,7 @@ class Board:
         board_img = open("board.png", "rb")
         return board_img
 
+
     def get_score(self) -> dict:
         if self.black_disc_count > self.white_disc_count:
             outcome = Board.BLACK
@@ -202,33 +205,6 @@ class Board:
         if possibleBlackMoves or possibleWhiteMoves:
             return False
         return True
-    
-    def evaluate_board(self) -> int:
-        '''Evaluate the board as per various heuristics.'''
-        # coin parity heuristic
-        coin_parity = 100 * (self.black_disc_count - self.white_disc_count) / (self.black_disc_count + self.white_disc_count)
-        
-        if self.check_game_over():
-            return self.black_disc_count - self.white_disc_count
-        
-        # mobility heuristic value
-        black_mobility = len(self.all_legal_moves(Board.BLACK))
-        white_mobility = len(self.all_legal_moves(Board.WHITE))
-        if black_mobility + white_mobility == 0:
-            actual_mobility = 0
-        else:
-            actual_mobility = 100 * (black_mobility - white_mobility) / (black_mobility + white_mobility)
-
-        # corner heuristic value
-        corners = (self.board[0, 0], self.board[0,7], self.board[7, 0], self.board[7, 7])
-        black_corners = sum(10 for coin in corners if coin == Board.BLACK)
-        white_corners = sum(-10 for coin in corners if coin == Board.WHITE)
-        if black_corners + white_corners == 0:
-            corner_value = 0
-        else:
-            corner_value = 100 * (black_corners - white_corners) / (black_corners + white_corners)
-
-        return (coin_parity + actual_mobility + corner_value)/3
 
 
     def set_board_state(self, board_state:str):
@@ -242,6 +218,7 @@ class Board:
 
         self.black_disc_count = self.board[self.board > 0].sum()
         self.white_disc_count = -self.board[self.board < 0].sum()
+        self.move = self.white_disc_count + self.black_disc_count - 4
 
 
     def get_board_state(self):
