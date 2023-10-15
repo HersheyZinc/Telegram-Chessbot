@@ -56,7 +56,28 @@ def eval_board_early(board: Board):
     white_mobility = len(board.all_legal_moves(Board.WHITE))
     actual_mobility = 100 * (black_mobility - white_mobility) / (black_mobility + white_mobility)
 
-    return (coin_parity + actual_mobility)/2
+
+    # static weight heuristic value
+    static_weights = np.array([
+                    [10, -5, 2, 2, 2, 2, -5, 10],
+                    [-5, -5, -1, -1, -1, -1, -5, -5],
+                    [2, -1, 1, 0, 0, 1, -1, 2],
+                    [2, -1, 0, 3, 3, 0, -1, 2],
+                    [2, -1, 0, 3, 3, 0, -1, 2],
+                    [2, -1, 1, 0, 0, 1, -1, 2],
+                    [-5, -5, -1, -1, -1, -1, -5, -5],
+                    [10, -5, 2, 2, 2, 2, -5, 10]
+                  ]).flatten()
+    black_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.BLACK)
+    white_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.WHITE)
+
+    if black_weights + white_weights == 0:
+        weight_value = 0
+    else:
+        weight_value = 100 * (black_weights - white_weights) / (black_weights + white_weights)
+
+
+    return (coin_parity + actual_mobility + weight_value)/3
 
 
 def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_board_end) -> int:
