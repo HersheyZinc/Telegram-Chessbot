@@ -73,7 +73,6 @@ class OthelloHandler:
         while board.turn == cpu_turn and not board.check_game_over():
 
             best_moves = minimax.find_best_moves(board,n=4)
-            print(best_moves)
             best_moves = [x["move"] for x in best_moves]
             weights = [100, 20, 10, 5]
             #cpu_move = random.choices(best_moves, weights = weights[:len(best_moves)])[0]
@@ -83,7 +82,7 @@ class OthelloHandler:
 
 
     def new_votechess(self):
-        '''
+        
         temp_path = "./data/othello_votechess.csv"
         df = pd.read_csv(temp_path)
         board_state = df.loc[random.randint(0,150)]["board_state"]
@@ -92,7 +91,7 @@ class OthelloHandler:
         board = Board()
         if random.choice([True, False]):
             self.cpu_move(board)
-
+        '''
         board_img = board.get_board_img()
         turn = "White" if board.turn==Board.WHITE else "Black"
         prompt = f"{turn} to move"
@@ -138,7 +137,7 @@ class OthelloHandler:
 
 
         prompt = "\U0001F4CA Vote Othello \U0001F4CA\n" + prompt
-        board_img = board.get_board_img(choices)
+        board_img = board.get_board_img()
         choices = [x["move"] for x in choices]
         return board_img, choices, solution_ind, prompt, board.get_board_state()
         

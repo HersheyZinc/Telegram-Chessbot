@@ -9,33 +9,63 @@ def eval_endgame(board: Board):
 def eval_midgame(board: Board):
     
     # coin parity heuristic
-    coin_parity = -(board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
+    coin_parity = (board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
     
     # mobility heuristic value
     black_mobility = len(board.all_legal_moves(Board.BLACK))
     white_mobility = len(board.all_legal_moves(Board.WHITE))
-    actual_mobility = 50 * (black_mobility - white_mobility) / (black_mobility + white_mobility)
+    actual_mobility = (black_mobility - white_mobility) / (black_mobility + white_mobility)
 
 
     # static weight heuristic value
     static_weights = np.array([
-                    [7, -3, 2, 2, 2, 2, -3, 7],
+                    [5, -3, 2, 2, 2, 2, -3, 5],
                     [-3, -4, -1, -1, -1, -1, -4, -3],
                     [2, -1, 1, 0, 0, 1, -1, 2],
                     [2, -1, 0, 1, 1, 0, -1, 2],
                     [2, -1, 0, 1, 1, 0, -1, 2],
                     [2, -1, 1, 0, 0, 1, -1, 2],
                     [-3, -4, -1, -1, -1, -1, -4, -3],
-                    [7, -3, 2, 2, 2, 2, -3, 7]
+                    [5, -3, 2, 2, 2, 2, -3, 5]
                   ]).flatten()
     black_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.BLACK)
     white_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.WHITE)
 
-    weight_value = black_weights - white_weights
+    if black_weights + white_weights == 0:
+        weight_value = 0
+    else:
+        weight_value = (black_weights - white_weights) / (black_weights + white_weights)
 
-    return weight_value
-    return (coin_parity + actual_mobility + weight_value)/2
+    #return weight_value * 64
+    return (coin_parity + actual_mobility*2 + weight_value*2)/5 * 64
 
+def eval_earlygame(board:Board):
+    if board.black_disc_count == 0:
+        coin_parity == -1
+    elif board.white_disc_count == 0:
+        coin_parity == 1
+    else:
+        coin_parity = -(board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
+
+    static_weights = np.array([
+                    [5, -4, 1, 1, 1, 1, -4, 5],
+                    [-4, -4, 0, 0, 0, 0, -4, -4],
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [-4, -4, 0, 0, 0, 0, -4, -4],
+                    [5, -4, 1, 1, 1, 1, -4, 5]
+                  ]).flatten()
+    black_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.BLACK)
+    white_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.WHITE)
+
+    if black_weights + white_weights == 0:
+        weight_value = 0
+    else:
+        weight_value = (black_weights - white_weights) / (black_weights + white_weights)
+
+    return (coin_parity + weight_value*3) / 4 * 64
 
 
 def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_endgame) -> int:
@@ -84,16 +114,18 @@ def find_best_moves(position: Board, n=4) -> list:
     moves = []
 
     legal_moves = position.all_legal_moves(position.turn)
+
+    if position.move > 52:
+        eval_function, depth = eval_endgame, 10
+    elif position.move > 20:
+        eval_function, depth = eval_midgame, 1
+    else:
+        eval_function, depth = eval_midgame, 0
     
     for row, col in legal_moves:
         if position.board[row, col] == Board.EMPTY:
             temp_position = deepcopy(position)
             temp_position.push((row,col))
-
-            if temp_position.move > 52:
-                eval_function, depth = eval_endgame, 10
-            else:
-                eval_function, depth = eval_midgame, 2
 
             currentEval = minimax(temp_position, depth, float('-inf'), float('inf'), eval_function)
             moves.append({"coord":(row,col), "move": Board.coord2move((row,col)), "eval":currentEval*position.turn})
