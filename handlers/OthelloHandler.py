@@ -47,7 +47,7 @@ class OthelloHandler:
     def get_mcq_choices(self, board, solution_san=None, choices_count=4, top_moves_count=5, depth=4):
         
         choices = minimax.find_best_moves(board, n=top_moves_count, depth=depth)
-        choices = [x["move"] for x in choices]
+        #choices = [x["move"] for x in choices]
         if len(choices) == 0:
             return ["Error", "No legal moves found", 0]
 
@@ -71,17 +71,7 @@ class OthelloHandler:
     def cpu_move(self, board):
         cpu_turn = board.turn
         while board.turn == cpu_turn and not board.check_game_over():
-            move_count = board.white_disc_count + board.black_disc_count
-            if move_count > 58:
-                depth = 7
-            elif move_count < 30:
-                depth = 3
-            else:
-                depth = 2
-            
-            depth=20
-
-            best_moves = minimax.find_best_moves(board,n=4, depth=depth)
+            best_moves = minimax.find_best_moves(board,n=4)
             best_moves = [x["move"] for x in best_moves]
             weights = [100, 20, 10, 5]
             cpu_move = random.choices(best_moves, weights = weights[:len(best_moves)])[0]
@@ -140,10 +130,11 @@ class OthelloHandler:
         else:
             turn = "White" if board.turn==Board.WHITE else "Black"
             prompt = f"{turn} to move"
-            choices, solution_ind = self.get_mcq_choices(board, choices_count=4, top_moves_count=5, depth=20)
+            choices, solution_ind = self.get_mcq_choices(board, choices_count=60, top_moves_count=60, depth=20)
 
 
         prompt = "\U0001F4CA Vote Othello \U0001F4CA\n" + prompt
-        board_img = board.get_board_img()
+        board_img = board.get_board_img(choices)
+        choices = [x["move"] for x in choices]
         return board_img, choices, solution_ind, prompt, board.get_board_state()
         

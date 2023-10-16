@@ -3,13 +3,10 @@ from copy import deepcopy
 import numpy as np
 
 
-def eval_board_end(board: Board):
+def eval_endgame(board: Board):
     return board.black_disc_count - board.white_disc_count
 
-def eval_board_mid(board: Board):
-    if board.check_game_over():
-        return eval_board_end(board)
-    
+def eval_midgame(board: Board):
     # coin parity heuristic
     coin_parity = 25 * (board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
     
@@ -43,9 +40,9 @@ def eval_board_mid(board: Board):
 
 
 
-def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_board_end) -> int:
+def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_endgame) -> int:
     if position.check_game_over():
-        return eval_board_end(position)
+        return eval_endgame(position)
     elif depth == 0:
         return eval_fun(position)
     
@@ -85,7 +82,7 @@ def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_bo
     return minEval
 
 
-def find_best_moves(position: Board, n=4, depth=3) -> list:
+def find_best_moves(position: Board, n=4, depth=3, eval_function=eval_midgame) -> list:
     moves = []
 
     legal_moves = position.all_legal_moves(position.turn)
@@ -95,11 +92,8 @@ def find_best_moves(position: Board, n=4, depth=3) -> list:
             temp_position = deepcopy(position)
             temp_position.push((row,col))
 
-
-            if temp_position.move < 52:
-                eval_function, depth = eval_board_mid, 3
-            else:
-                eval_function, depth = eval_board_end, 10
+            if temp_position.move >= 52:
+                eval_function, depth = eval_endgame, 10
 
             currentEval = minimax(temp_position, depth, float('-inf'), float('inf'), eval_function)
             moves.append({"coord":(row,col), "move": Board.coord2move((row,col)), "eval":currentEval})

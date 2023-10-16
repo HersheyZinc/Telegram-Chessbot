@@ -151,7 +151,7 @@ class Board:
         print(self.board)
 
 
-    def get_board_img(self):
+    def get_board_img(self, moves=None):
         im = Image.open("./othello/othello_board.png")
         draw = ImageDraw.Draw(im)
         border_size = 34
@@ -171,6 +171,18 @@ class Board:
                 else:
                     continue
                 draw.ellipse((x1, y1, x2, y2), fill = fill, outline ='black')
+
+        if moves:
+            for move in moves:
+                r, c = move["coord"]
+                eval_str = str(move["eval"])
+                x1 = border_size + c*tile_size + tile_buffer
+                y1 = border_size + r*tile_size + tile_buffer
+                x2 = border_size + (c+1)*tile_size - tile_buffer
+                y2 = border_size + (r+1)*tile_size - tile_buffer
+                draw.text((x1,y1,x2,y2),eval_str)
+
+
 
         im.save("board.png")
         board_img = open("board.png", "rb")
