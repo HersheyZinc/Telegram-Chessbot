@@ -85,7 +85,7 @@ class OthelloHandler:
         
         temp_path = "./data/othello_votechess.csv"
         df = pd.read_csv(temp_path)
-        board_state = df.loc[random.randint(0,39)]["board_state"]
+        board_state = df.loc[random.randint(0,130)]["board_state"]
         board = Board(board_state)
         '''
         board = Board()

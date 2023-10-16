@@ -57,7 +57,7 @@ def generate_puzzles(src_csv, dest_csv, n=100):
 
 
 
-def generate_votechess_positions(src_csv, dest_csv, n=100):
+def generate_votechess_positions(src_csv, dest_csv, n=500):
     df = pd.read_csv(src_csv)
     df = df.sample(n)
     vc_df = pd.DataFrame(columns=["board_state"])
@@ -70,7 +70,7 @@ def generate_votechess_positions(src_csv, dest_csv, n=100):
             move = game_moves[:2]
             game_moves = game_moves[2:]
             b.push(move)
-            if (b.move >= 50) and (b.move < 54) and len(b.all_legal_moves())>=3 and len(b.all_legal_moves())<=6:
+            if (b.move >= 52) and (b.move <= 54) and len(b.all_legal_moves())>=3 and len(b.all_legal_moves())<=4:
                 best_move = minimax.find_best_moves(b,1)[0]
                 if best_move["eval"] > 0:
                     row = {"board_state": b.get_board_state()}
