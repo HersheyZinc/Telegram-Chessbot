@@ -434,7 +434,7 @@ def main() -> None:
     # Background tasks
     app.add_handler(PollAnswerHandler(receive_poll_answer))
 
-    app.run_polling()
+    #app.run_polling()
     
     app.run_webhook(
     listen="0.0.0.0",

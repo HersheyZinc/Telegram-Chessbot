@@ -95,7 +95,7 @@ class OthelloHandler:
         board_img = board.get_board_img()
         turn = "White" if board.turn==Board.WHITE else "Black"
         prompt = f"{turn} to move"
-        choices, solution_ind = self.get_mcq_choices(board, choices_count=4, top_moves_count=6, depth=20)
+        choices, solution_ind = self.get_mcq_choices(board, choices_count=4, top_moves_count=5, depth=20)
         choices = [x["move"] for x in choices]
         prompt = "\U0001F4CA Vote Othello \U0001F4CA\n" + prompt
         return board_img, choices, solution_ind, prompt, board.get_board_state()
