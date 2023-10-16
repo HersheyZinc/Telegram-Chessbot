@@ -7,8 +7,9 @@ def eval_endgame(board: Board):
     return board.black_disc_count - board.white_disc_count
 
 def eval_midgame(board: Board):
+    
     # coin parity heuristic
-    coin_parity = 25 * (board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
+    coin_parity = -(board.black_disc_count - board.white_disc_count) / (board.black_disc_count + board.white_disc_count)
     
     # mobility heuristic value
     black_mobility = len(board.all_legal_moves(Board.BLACK))
@@ -30,12 +31,9 @@ def eval_midgame(board: Board):
     black_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.BLACK)
     white_weights = sum(value for value, coin in zip(static_weights, board.board.flatten()) if coin == Board.WHITE)
 
-    if black_weights + white_weights == 0:
-        weight_value = 0
-    else:
-        weight_value = 125 * (black_weights - white_weights) / (black_weights + white_weights)
+    weight_value = black_weights - white_weights
 
-
+    return weight_value
     return (coin_parity + actual_mobility + weight_value)/2
 
 
@@ -55,7 +53,7 @@ def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_en
                 temp_position = deepcopy(position)
                 temp_position.push((row,col))
 
-                eval = minimax(temp_position, depth - 1, alpha, beta)
+                eval = minimax(temp_position, depth - 1, alpha, beta, eval_fun=eval_fun)
                 maxEval = max(maxEval, eval)
 
                 alpha = max(alpha, eval)
@@ -72,7 +70,7 @@ def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_en
             temp_position = deepcopy(position)
             temp_position.push((row,col))
 
-            eval = minimax(temp_position, depth - 1, alpha, beta)
+            eval = minimax(temp_position, depth - 1, alpha, beta, eval_fun=eval_fun)
             minEval = min(minEval, eval)
 
             beta = min(beta, eval)
@@ -82,7 +80,7 @@ def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_en
     return minEval
 
 
-def find_best_moves(position: Board, n=4, depth=3, eval_function=eval_midgame) -> list:
+def find_best_moves(position: Board, n=4) -> list:
     moves = []
 
     legal_moves = position.all_legal_moves(position.turn)
@@ -92,13 +90,15 @@ def find_best_moves(position: Board, n=4, depth=3, eval_function=eval_midgame) -
             temp_position = deepcopy(position)
             temp_position.push((row,col))
 
-            if temp_position.move >= 52:
+            if temp_position.move > 52:
                 eval_function, depth = eval_endgame, 10
+            else:
+                eval_function, depth = eval_midgame, 2
 
             currentEval = minimax(temp_position, depth, float('-inf'), float('inf'), eval_function)
-            moves.append({"coord":(row,col), "move": Board.coord2move((row,col)), "eval":currentEval})
+            moves.append({"coord":(row,col), "move": Board.coord2move((row,col)), "eval":currentEval*position.turn})
         
-        moves.sort(key=lambda x: x["eval"]*position.turn, reverse=True)
+        moves.sort(key=lambda x: x["eval"], reverse=True)
         moves = moves[:min(len(moves), n)]
     return moves
 

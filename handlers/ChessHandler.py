@@ -22,19 +22,14 @@ class ChessHandler:
         """
         Generator that yields a random puzzle from the csv
         """
-        for chunk in pd.read_csv(csv_path, chunksize=100, skiprows=random.randint(0,1000000-100)):
-            chunk = chunk.sample(frac=1)
-            if rating:
-                rating_lower = max(rating - 50, chunk.min()["Rating"])
-                rating_upper = min(rating + 50, chunk.max()["Rating"])
-                chunk = chunk[(chunk.Rating>=rating_lower) & (chunk.Rating<=rating_upper)]
+        p = 0.0001
+        df = pd.read_csv("data/chess_puzzles.csv", skiprows=lambda i: i>0 and random.random() > p)
+        for _, row in df.iterrows():
+            FEN = row["FEN"]
+            moves = row["Moves"]
+            puzzle_rating = row["Rating"]
 
-            for _, row in chunk.iterrows():
-                FEN = row["FEN"]
-                moves = row["Moves"]
-                puzzle_rating = row["Rating"]
-
-                yield FEN, moves, puzzle_rating
+            yield FEN, moves, puzzle_rating
 
 
     def get_mcq_choices(self, board, solution_san=None, choices_count=4, top_moves_count=5, rating=2500, depth=18):
