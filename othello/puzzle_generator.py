@@ -62,24 +62,19 @@ def generate_votechess_positions(src_csv, dest_csv, n=100):
     df = df.sample(n)
     vc_df = pd.DataFrame(columns=["board_state"])
     for index in tqdm(df.index):
-        if df["winner"][index] == 1:
-            winner = Board.WHITE
-        else:
-            winner = Board.BLACK
         
         game_moves = df["game_moves"][index]
 
         b = Board()
-        move_count = 0
-
         while len(game_moves)>=2:
             move = game_moves[:2]
             game_moves = game_moves[2:]
             b.push(move)
-            move_count+=1
-            if (move_count >= 52) and (move_count < 60) and b.turn == winner:
-                row = {"board_state": b.get_board_state()}
-                vc_df.loc[len(vc_df)] = row
+            if (b.move >= 50) and (b.move < 54) and len(b.all_legal_moves())>=3 and len(b.all_legal_moves())<=6:
+                best_move = minimax.find_best_moves(b,1)[0]
+                if best_move["eval"] > 0:
+                    row = {"board_state": b.get_board_state()}
+                    vc_df.loc[len(vc_df)] = row
                 break
         
     vc_df.to_csv(dest_csv, index=False)

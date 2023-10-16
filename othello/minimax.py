@@ -115,8 +115,8 @@ def find_best_moves(position: Board, n=4) -> list:
 
     legal_moves = position.all_legal_moves(position.turn)
 
-    if position.move > 52:
-        eval_function, depth = eval_endgame, 10
+    if position.move >= 48:
+        eval_function, depth = eval_endgame, 20
     elif position.move > 20:
         eval_function, depth = eval_midgame, 1
     else:
