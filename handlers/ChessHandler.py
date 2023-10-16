@@ -22,7 +22,7 @@ class ChessHandler:
         """
         Generator that yields a random puzzle from the csv
         """
-        for chunk in pd.read_csv(csv_path, chunksize=100):
+        for chunk in pd.read_csv(csv_path, chunksize=100, skiprows=random.randint(0,1000000-100)):
             chunk = chunk.sample(frac=1)
             if rating:
                 rating_lower = max(rating - 50, chunk.min()["Rating"])
