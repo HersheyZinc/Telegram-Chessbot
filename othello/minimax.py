@@ -70,10 +70,10 @@ def eval_earlygame(board:Board):
 
 def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_endgame) -> int:
     if position.check_game_over():
-        return eval_endgame(position)
+        return eval_endgame(position), []
     elif depth == 0:
-        return eval_fun(position)
-    
+        return eval_fun(position), []
+    best_line = []
     # maximizing player's turn - Black
     if position.turn == Board.BLACK:
         maxEval = float('-inf')
@@ -83,14 +83,17 @@ def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_en
                 temp_position = deepcopy(position)
                 temp_position.push((row,col))
 
-                eval = minimax(temp_position, depth - 1, alpha, beta, eval_fun=eval_fun)
-                maxEval = max(maxEval, eval)
+                eval, line = minimax(temp_position, depth - 1, alpha, beta, eval_fun=eval_fun)
+                #maxEval = max(maxEval, eval)
+                if eval > maxEval:
+                    maxEval = eval
+                    best_line = [Board.coord2move((row,col))] + line
 
                 alpha = max(alpha, eval)
                 if beta <= alpha:
                     break
 
-        return maxEval
+        return maxEval, best_line
 
     # else minimizing player's turn - White
     minEval = float('+inf')
@@ -100,14 +103,17 @@ def minimax(position: Board, depth: int, alpha: int, beta: int, eval_fun=eval_en
             temp_position = deepcopy(position)
             temp_position.push((row,col))
 
-            eval = minimax(temp_position, depth - 1, alpha, beta, eval_fun=eval_fun)
-            minEval = min(minEval, eval)
+            eval, line = minimax(temp_position, depth - 1, alpha, beta, eval_fun=eval_fun)
+            #minEval = min(minEval, eval)
+            if eval < minEval:
+                minEval = eval
+                best_line = [Board.coord2move((row,col))] + line
 
             beta = min(beta, eval)
             if beta <= alpha:
                 break
 
-    return minEval
+    return minEval, best_line
 
 
 def find_best_moves(position: Board, n=4) -> list:
@@ -127,8 +133,12 @@ def find_best_moves(position: Board, n=4) -> list:
             temp_position = deepcopy(position)
             temp_position.push((row,col))
 
-            currentEval = minimax(temp_position, depth, float('-inf'), float('inf'), eval_function)
-            moves.append({"coord":(row,col), "move": Board.coord2move((row,col)), "eval":currentEval*position.turn})
+            currentEval, line = minimax(temp_position, depth, float('-inf'), float('inf'), eval_function)
+            moves.append({"coord":(row,col), 
+                          "move": Board.coord2move((row,col)),
+                           "eval":currentEval*position.turn, 
+                           "line": [Board.coord2move((row,col))] + line
+                           })
         
         moves.sort(key=lambda x: x["eval"], reverse=True)
         moves = moves[:min(len(moves), n)]

@@ -19,27 +19,30 @@ class OthelloHandler:
 
             for _, row in chunk.iterrows():
                 board_state = row["board_state"]
-                moves = row["moves"].split(" ")
-                solution = row["solution"]
+                moves = row["move_choices"].split(" ")
+                solution = moves[0]
+                moves = moves[1:]
+                evaluations = row["evaluations"].split(" ")
+                solution_line = row["solution_line"]
+                
 
-                yield board_state, solution, moves
+                yield board_state, solution, moves, evaluations, solution_line
 
 
     def generate_puzzle(self):
         try:
-            board_state, solution, choices = next(self.puzzle_gen)
+            board_state, solution, choices, evaluations, solution_line = next(self.puzzle_gen)
         except Exception:
             self.puzzle_gen = self.puzzle_generator(self.puzzle_path)
-            board_state, solution, choices = next(self.puzzle_gen)
+            board_state, solution, choices, evaluations, solution_line = next(self.puzzle_gen)
         b = Board(board_state)
+        explanation = "\n".join([f"{move}: {eval}" for move, eval in zip([solution] + choices, evaluations)]) +\
+                        f"\n\nSolution line: {solution_line}"
         board_img = b.get_board_img()
         solution_ind = random.randint(0, len(choices))
         choices.insert(solution_ind, solution)
         turn = "White" if b.turn==Board.WHITE else "Black"
         prompt = f"\U000026AA Othello Puzzle \U000026AB\n{turn} to move"
-        moves = minimax.find_best_moves(b)
-        explanation = f"{moves[0]['move']} leads to a +{abs(moves[0]['eval'])} disc count.\n"
-        explanation = explanation + "\n".join([f"{x['move']}: -{abs(x['eval'])}" for x in moves[1:]])
 
         return board_img, choices, solution_ind, prompt, explanation
     

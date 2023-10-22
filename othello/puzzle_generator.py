@@ -16,7 +16,7 @@ def generate_puzzles(src_csv, dest_csv, n=100):
     df = pd.read_csv(src_csv)
     puzzle_count = 0
 
-    puzzle_df = pd.DataFrame(columns=["board_state", "solution", "moves"])
+    puzzle_df = pd.DataFrame(columns=["board_state", "solution_line", "move_choices", "evaluations"])
     with tqdm(total=n) as pbar:
         for game_moves in df["game_moves"]:
             b = Board()
@@ -34,15 +34,20 @@ def generate_puzzles(src_csv, dest_csv, n=100):
                 elif len(legal_moves)<=2 or len(legal_moves)>=5:
                     continue
                 
-                moves = minimax.find_best_moves(b)
+                moves = minimax.find_best_moves(b, n=4)
                 move1 = moves[0]["eval"]
                 move2 = moves[1]["eval"]
                 if get_sign(move1) == get_sign(move2):
                     continue
+                elif abs(move1) > 10:
+                    continue
 
-                solution = moves[0]["move"]
-                legal_moves = " ".join([move["move"] for move in moves[1:]])
-                row = {"board_state": b.get_board_state(), "solution": solution, "moves":legal_moves}
+                move_choices = " ".join([move["move"] for move in moves])
+                evaluations = " ".join([str(int(move["eval"])) for move in moves])
+                solution_line = " ".join(moves[0]["line"])
+                row = {"board_state": b.get_board_state(), "solution_line": solution_line,
+                       "move_choices": move_choices, "evaluations": evaluations}
+                print(row)
                 puzzle_df.loc[len(puzzle_df)] = row
                 puzzle_count+=1
                 pbar.update(1)
