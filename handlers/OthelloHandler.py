@@ -36,7 +36,7 @@ class OthelloHandler:
             self.puzzle_gen = self.puzzle_generator(self.puzzle_path)
             board_state, solution, choices, evaluations, solution_line = next(self.puzzle_gen)
         b = Board(board_state)
-        explanation = "\n".join([f"{move}: {eval}" for move, eval in zip([solution] + choices, evaluations)]) +\
+        explanation = ", ".join([f"{move}: {eval}" for move, eval in zip([solution] + choices, evaluations)]) +\
                         f"\n\nSolution line: {solution_line}"
         board_img = b.get_board_img()
         solution_ind = random.randint(0, len(choices))

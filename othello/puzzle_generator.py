@@ -39,7 +39,7 @@ def generate_puzzles(src_csv, dest_csv, n=100):
                 move2 = moves[1]["eval"]
                 if get_sign(move1) == get_sign(move2):
                     continue
-                elif abs(move1) > 10:
+                elif abs(move1) > 4:
                     continue
 
                 move_choices = " ".join([move["move"] for move in moves])
