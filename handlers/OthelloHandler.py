@@ -14,19 +14,18 @@ class OthelloHandler:
 
     
     def puzzle_generator(self, csv_path):
-        for chunk in pd.read_csv(csv_path, chunksize=100):
-            chunk = chunk.sample(frac=1)
+        p = 0.1
+        df = pd.read_csv(csv_path, skiprows=lambda i: i>0 and random.random() > p)
+        for _, row in df.iterrows():
+            board_state = row["board_state"]
+            moves = row["move_choices"].split(" ")
+            solution = moves[0]
+            moves = moves[1:]
+            evaluations = row["evaluations"].split(" ")
+            solution_line = row["solution_line"]
+            
 
-            for _, row in chunk.iterrows():
-                board_state = row["board_state"]
-                moves = row["move_choices"].split(" ")
-                solution = moves[0]
-                moves = moves[1:]
-                evaluations = row["evaluations"].split(" ")
-                solution_line = row["solution_line"]
-                
-
-                yield board_state, solution, moves, evaluations, solution_line
+            yield board_state, solution, moves, evaluations, solution_line
 
 
     def generate_puzzle(self):
