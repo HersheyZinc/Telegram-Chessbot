@@ -4,3 +4,4 @@ stockfish
 __pycache__
 board.png
 test.ipynb
+othello/othello_dataset.csv

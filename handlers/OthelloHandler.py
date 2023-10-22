@@ -15,7 +15,8 @@ class OthelloHandler:
     
     def puzzle_generator(self, csv_path):
         p = 0.1
-        df = pd.read_csv(csv_path, skiprows=lambda i: i>0 and random.random() > p)
+        #df = pd.read_csv(csv_path, skiprows=lambda i: i>0 and random.random() > p)
+        df = pd.read_csv(csv_path)
         for _, row in df.iterrows():
             board_state = row["board_state"]
             moves = row["move_choices"].split(" ")

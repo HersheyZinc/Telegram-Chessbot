@@ -1,5 +1,2 @@
 board_state,solution_line,move_choices,evaluations
 xwwwwwwxbxbbbwxxbbbwwbwbbwbbwbwbbwwbbwwbbbwwwbwbbxwwbwwbxxwwwwwb b,b8 g2 h1 h2 b7 a8 a1 b2,b8 g2 h2 b7,0 -10 -10 -10
-wxwwwwwwwwwwbbwxwwwwbwwwwwwbwbwwwwbwwwbwwwwwwwwbbwwwwwxxwwxwwwwx b,c8 h7 h2 h8 g7 b1,c8 h2 g7,8 -4 -28
-xbbbbbxxxwbwbbxwwwwbbbbbbwwwwwbbbwbbwwbbbwbwbwbbbwwbwbxxbwwwwwww w,h7 g7 g2 g1 a2 a1 h1,h7 g1 g7 g2,6 -4 -6 -8
-xbbbbbxwxbbwbbxwbbwbwbbwbwwbbbbwwwwwbwwwwwwwwwbwxwwwwbbwxxxwbbbb b,c8 a1 a2 b8 a8 a7 g1 g2,c8 a8 b8 a7,0 -6 -8 -8

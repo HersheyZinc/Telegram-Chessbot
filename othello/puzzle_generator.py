@@ -47,7 +47,6 @@ def generate_puzzles(src_csv, dest_csv, n=100):
                 solution_line = " ".join(moves[0]["line"])
                 row = {"board_state": b.get_board_state(), "solution_line": solution_line,
                        "move_choices": move_choices, "evaluations": evaluations}
-                print(row)
                 puzzle_df.loc[len(puzzle_df)] = row
                 puzzle_count+=1
                 pbar.update(1)
