@@ -20,9 +20,9 @@ def download_chess_puzzles(rating_lower=None, rating_upper=None, count=1000000, 
     
     # Download lichess puzzle database
     
-    response = requests.get(PUZZLEURL, timeout=10)
+    response = requests.get(PUZZLEURL, timeout=60)
 
-    # Download zst file
+    # # Download zst file
     with open("lichess_db_puzzle.csv.zst", "wb") as f:
         f.write(response.content)
 
@@ -64,7 +64,7 @@ def download_stockfish():
         return
     
     # Download stockfish from github
-    response = requests.get(STOCKFISHURL, timeout=10)
+    response = requests.get(STOCKFISHURL, timeout=60)
 
     # Download tar file
     with open("stockfish.tar", "wb") as f:
@@ -87,5 +87,4 @@ def setup():
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(PUZZLE_PATH)
-    print(df.shape)
+    download_chess_puzzles(rating_lower=1800)

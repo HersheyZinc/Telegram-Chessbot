@@ -22,7 +22,7 @@ class ChessHandler:
         """
         Generator that yields a random puzzle from the csv
         """
-        p = 0.0001
+        p = 0.01
         df = pd.read_csv("data/chess_puzzles.csv", skiprows=lambda i: i>0 and random.random() > p)
         for _, row in df.iterrows():
             FEN = row["FEN"]
