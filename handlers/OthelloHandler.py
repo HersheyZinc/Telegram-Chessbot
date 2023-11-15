@@ -1,5 +1,6 @@
 from othello.board import Board
 from othello import minimax
+from copy import deepcopy
 import pandas as pd
 import random
 
@@ -37,13 +38,15 @@ class OthelloHandler:
         b = Board(board_state)
         explanation = ", ".join([f"{move}: {eval}" for move, eval in zip([solution] + choices, evaluations)]) +\
                         f"\n\nSolution line: {solution_line}"
-        board_img = b.get_board_img()
+        
         solution_ind = random.randint(0, len(choices))
         choices.insert(solution_ind, solution)
         turn = "White" if b.turn==Board.WHITE else "Black"
         prompt = f"\U000026AA Othello Puzzle \U000026AB\n{turn} to move"
+        solution_video = OthelloHandler.generate_solution_video(deepcopy(b), solution_line)
+        board_img, _ = b.get_board_img()
 
-        return board_img, choices, solution_ind, prompt, explanation
+        return board_img, choices, solution_ind, prompt, explanation, solution_video
     
 
     def get_mcq_choices(self, board, solution_san=None, choices_count=4, top_moves_count=5, depth=4):
@@ -94,7 +97,7 @@ class OthelloHandler:
         if random.choice([True, False]):
             self.cpu_move(board)
         '''
-        board_img = board.get_board_img()
+        board_img, _ = board.get_board_img()
         turn = "White" if board.turn==Board.WHITE else "Black"
         prompt = f"{turn} to move"
         choices, solution_ind = self.get_mcq_choices(board, choices_count=4, top_moves_count=5, depth=20)
@@ -139,7 +142,26 @@ class OthelloHandler:
 
 
         prompt = "\U0001F4CA Vote Othello \U0001F4CA\n" + prompt
-        board_img = board.get_board_img()
+        board_img, _ = board.get_board_img()
         choices = [x["move"] for x in choices]
         return board_img, choices, solution_ind, prompt, board.get_board_state()
         
+
+    @staticmethod
+    def generate_solution_video(board, solution_line):
+        images = []
+        filename = "solution.gif"
+
+        _, first_im = board.get_board_img()
+
+        moves = solution_line.split(" ")
+        for move in moves:
+            board.push(move)
+            _, im = board.get_board_img()
+            images.append(im)
+
+        first_im.save(filename, save_all=True, append_images=images, duration=900, loop=0)
+        solution_video = open(filename, "rb")
+        return solution_video
+
+

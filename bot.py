@@ -13,7 +13,7 @@ APPNAME = str(os.environ['APPNAME']) # Set environment var via Heroku
 PORT = int(os.environ.get('PORT', '8443'))
 REDIS_URL = os.environ.get('REDISCLOUD_URL')
 
-#from utils.config import TOKEN, REDIS_URL
+# from utils.config import TOKEN, REDIS_URL
 
 REDIS = urlparse(REDIS_URL)
 from telegram import (
@@ -30,10 +30,10 @@ from telegram.ext import (
     filters,
 )
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-logging.getLogger().setLevel(logging.INFO)
+# logging.basicConfig(
+#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+# )
+# logging.getLogger().setLevel(logging.INFO)
 
 
 # --------------------------- Helper Functions --------------------------- #
@@ -64,13 +64,17 @@ async def send_puzzle(context: CallbackContext) -> None:
     chat_id = context.job.chat_id
     data = context.job.data
     handler = data["handler"]
-    board_img, choices, solution_ind, prompt, explanation = handler.generate_puzzle()
+    board_img, choices, solution_ind, prompt, explanation, solution_video = handler.generate_puzzle()
+    await context.bot.send_animation(animation=solution_video, chat_id=chat_id, 
+                                 has_spoiler=True, disable_notification=True)
     await context.bot.send_photo(photo=board_img,chat_id=chat_id)
     await context.bot.send_poll(
         question = prompt, options = choices, correct_option_id=solution_ind,
         type=Poll.QUIZ, allows_multiple_answers = False, explanation=explanation,
         chat_id=chat_id, is_anonymous = True, disable_notification=True
     )
+
+    
 
 
 async def send_votegame(context: CallbackContext) -> None:
@@ -434,7 +438,7 @@ def main() -> None:
     # Background tasks
     app.add_handler(PollAnswerHandler(receive_poll_answer))
 
-    #app.run_polling()
+    # app.run_polling()
     
     app.run_webhook(
     listen="0.0.0.0",

@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+import os, tempfile
 
 class Board:
     WHITE =  -1
@@ -180,9 +181,11 @@ class Board:
                 y1 = border_size + r*tile_size + tile_buffer
                 draw.text((x1,y1,x2,y2),eval_str, fill="orange", font=font)
             
-        im.save("board.png")
-        board_img = open("board.png", "rb")
-        return board_img
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            temp_path = os.path.join(tmpdirname, "board.png")
+            im.save(temp_path)
+            im_bytes = open(temp_path, "rb")
+            return im_bytes, im
 
 
     def get_score(self) -> dict:

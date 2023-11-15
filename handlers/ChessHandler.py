@@ -1,7 +1,10 @@
 from cairosvg import svg2png
 import pandas as pd
 from stockfish import Stockfish
-import chess, chess.svg, random
+import chess, chess.svg, random, tempfile, os
+from copy import deepcopy
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class ChessHandler:
@@ -23,7 +26,7 @@ class ChessHandler:
         Generator that yields a random puzzle from the csv
         """
         p = 0.01
-        df = pd.read_csv("data/chess_puzzles.csv", skiprows=lambda i: i>0 and random.random() > p)
+        df = pd.read_csv(csv_path, skiprows=lambda i: i>0 and random.random() > p)
         for _, row in df.iterrows():
             FEN = row["FEN"]
             moves = row["Moves"]
@@ -110,7 +113,7 @@ class ChessHandler:
         move = chess.Move.from_uci(first_move)
         board.push(move)
 
-        board_img = get_board_img(board)
+        
 
         solution_uci = solution_line[0]
         solution_san = uci_to_san(board, solution_uci)
@@ -119,8 +122,11 @@ class ChessHandler:
 
         turn = "White" if board.turn else "Black"
         prompt = f"\U0001F9E9 Chess Puzzle \U0001F9E9\n{turn} to move."
-        explanation = "Solution line (in UCI): " + ", ".join(solution_line) + f"\n Rating: {puzzle_rating}"
-        return board_img, choices, solution_ind, prompt, explanation
+
+        solution_video, solution_line_san = ChessHandler.generate_solution_video(deepcopy(board), solution_line)
+        explanation = "Solution line: " + ", ".join(solution_line_san) + f"\n Rating: {puzzle_rating}"
+        board_img, _ = get_board_img(board)
+        return board_img, choices, solution_ind, prompt, explanation, solution_video
 
 
     def new_votechess(self):
@@ -139,7 +145,7 @@ class ChessHandler:
         if random.choice([True, False]):
             board = self.cpu_move(board,rating=2000,depth=7)
 
-        board_img = get_board_img(board)
+        board_img, _ = get_board_img(board)
 
         turn = "White" if board.turn else "Black"
         prompt = f"{turn} to move"
@@ -199,9 +205,28 @@ class ChessHandler:
 
 
         prompt = "\U0001F4CA Vote Chess \U0001F4CA\n" + prompt
-        board_img = get_board_img(board)
+        board_img, _ = get_board_img(board)
         return board_img, choices, solution_ind, prompt, board.fen()
 
+
+    @staticmethod
+    def generate_solution_video(board, solution_line):
+        solution_line_san = []
+        turn = not board.turn
+        images = []
+        filename = "solution.gif"
+
+        _, first_im = get_board_img(board, pov=turn)
+
+        for move in solution_line:
+            solution_line_san.append(uci_to_san(board, move))
+            board.push(chess.Move.from_uci(move))
+            _, im = get_board_img(board, pov=turn)
+            images.append(im)
+
+        first_im.save(filename, save_all=True, append_images=images, duration=900, loop=0)
+        solution_video = open(filename, "rb")
+        return solution_video, solution_line_san
 
     # Static functions
 def uci_to_san(board:chess.Board, uci:str):
@@ -213,7 +238,7 @@ def uci_to_san(board:chess.Board, uci:str):
     return san
 
 
-def get_board_img(board: chess.Board):
+def get_board_img(board: chess.Board, pov=None):
     """
     Renders a png image from a board state.
     """
@@ -221,7 +246,16 @@ def get_board_img(board: chess.Board):
         last_move = board.peek()
     except:
         last_move = None
-    boardsvg = chess.svg.board(board=board,flipped = not board.turn, lastmove = last_move)
-    svg2png(bytestring=boardsvg,write_to='board.png')
-    board_img = open("board.png", "rb")
-    return board_img
+    if pov is None:
+        pov = not board.turn
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        boardsvg = chess.svg.board(board=board,flipped = pov, lastmove = last_move)
+        temp_path = os.path.join(tmpdirname, "board.png")
+        svg2png(bytestring=boardsvg,write_to=temp_path)
+        im = Image.open(temp_path)
+        im_bytes = open(temp_path, "rb")
+        
+        return im_bytes, im
+
+

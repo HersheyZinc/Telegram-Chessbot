@@ -12,6 +12,7 @@ Beep boop! Welcome to the Chessbot-3000. This bot lets you discover your inner c
 \U0001F4CA Othello \U0001F4CA
 /othello - Sends an endgame puzzle, only 1 move wins the game!
 /voteothello - Vote on the best move to beat a cpu!
+/voteothello resign - Resign the current game.
 
 
 Utility
