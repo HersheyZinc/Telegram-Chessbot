@@ -297,6 +297,13 @@ async def admin_reset_schedule(update: Update, context: CallbackContext) -> None
     context.bot_data.update({"schedules": []})
     await context.bot.send_message(chat_id=chat_id, text="All scheduling reset. Effective next restart.", disable_notification=True)
 
+async def admin_reset_votechess(update: Update, context: CallbackContext) -> None:
+    chat_id = update.effective_chat.id
+    schedules = context.bot_data.get("schedules")
+    schedules = [sched for sched if sched[1] == Task.CHESS_PUZZLE.value] + [sched for sched if sched[1] == Task.OTHELLO_PUZZLE.value]
+    context.bot_data.update({"schedules": schedules})
+    await context.bot.send_message(chat_id=chat_id, text="Votechess scheduling reset. Effective next restart.", disable_notification=True)
+
 async def admin_announcement(update: Update, context: CallbackContext) -> None:
     """
     Sends announcement to all chats with scheduled tasks
@@ -368,6 +375,7 @@ async def init_app(app: Application) -> None:
     for schedule in bot_data.get("schedules"):
         chat_id, task, time_str = schedule
         job_name = task + str(chat_id)
+        func = None
 
         hour = (int(time_str[:2]) - 8)%24 # Convert SGT to UTC
         minute = min(int(time_str[2:]),59)
@@ -386,8 +394,9 @@ async def init_app(app: Application) -> None:
             func = send_votegame
         else:
             continue
+
         app.job_queue.run_daily(func, time=time, chat_id=chat_id,
-                                name=job_name, data=data)
+                                    name=job_name, data=data)
     
     
     time = datetime.time(hour=3)
@@ -434,6 +443,7 @@ def main() -> None:
     # Admin
     app.add_handler(CommandHandler("announcement", admin_announcement, filters.Chat(username=ADMIN)))
     app.add_handler(CommandHandler("schedule_clearall", admin_reset_schedule, filters.Chat(username=ADMIN)))
+    app.add_handler(CommandHandler("schedule_clearvotechess", admin_reset_votechess, filters.Chat(username=ADMIN)))
 
     # Background tasks
     app.add_handler(PollAnswerHandler(receive_poll_answer))
