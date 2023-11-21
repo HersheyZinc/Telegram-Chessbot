@@ -300,7 +300,7 @@ async def admin_reset_schedule(update: Update, context: CallbackContext) -> None
 async def admin_reset_votechess(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
     schedules = context.bot_data.get("schedules")
-    schedules = [sched if sched[1] == Task.CHESS_PUZZLE.value for sched in schedules] + [sched if sched[1] == Task.OTHELLO_PUZZLE.value for sched in schedules]
+    schedules = [sched for sched in schedules if sched[1] == Task.CHESS_PUZZLE.value] + [sched for sched in schedules if sched[1] == Task.OTHELLO_PUZZLE.value]
     context.bot_data.update({"schedules": schedules})
     await context.bot.send_message(chat_id=chat_id, text="Votechess scheduling reset. Effective next restart.", disable_notification=True)
 
